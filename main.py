@@ -35,7 +35,6 @@ class CreateSlider:
     def get_slider(self):
         return self.slider
 
-class MainWindow(QtWidgets.QMainWindow):
 class Modes:
     def __init__(self, name, labels, ranges, no_sliders):
         self.name = name
@@ -43,6 +42,8 @@ class Modes:
         self.ranges = ranges #(for each slider whats the range of freq. )
         self.sliders = no_sliders
         self.slider_values = [[0, 10, 1]]*len(list(labels))
+
+
 
 class MainWindow(QtWidgets.QMainWindow):    
     def __init__(self, *args, **kwargs):

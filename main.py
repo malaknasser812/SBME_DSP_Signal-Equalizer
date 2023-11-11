@@ -36,9 +36,22 @@ class CreateSlider:
         return self.slider
 
 class MainWindow(QtWidgets.QMainWindow):
+class Modes:
+    def __init__(self, name, labels, ranges, no_sliders):
+        self.name = name
+        self.labels = labels
+        self.ranges = ranges #(for each slider whats the range of freq. )
+        self.sliders = no_sliders
+        self.slider_values = [[0, 10, 1]]*len(list(labels))
 
+class MainWindow(QtWidgets.QMainWindow):    
     def __init__(self, *args, **kwargs):
         super(MainWindow, self).__init__(*args, **kwargs)
+
+        self.modes = [Modes("Frequency", ['Label 1', 'Label 2'], [(0, 100), (100, 200)], []),
+                    Modes("Animals", ['Label A', 'Label E'], [(0, 50), (50, 100)], []),
+                    Modes("Music Instrument", ['Drum', 'Flute'], [(0, 100), (100, 200)], []),
+                    Modes("Medical", ['Arrhythmia 1', 'Arrhythmia 2'], [(0, 50), (50, 100)], [])]
 
         # Load the UI Page
         uic.loadUi(r'task3.ui', self)

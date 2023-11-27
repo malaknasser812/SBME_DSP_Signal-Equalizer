@@ -52,6 +52,47 @@ class Modes:
         self.slider_values = [[0, 10, 1]]*len(list(labels))
 
 
+class SmoothingWindow:
+    def __init__(self, window_type, parameters=None):
+        self.window_type = window_type
+        self.parameters = parameters
+
+    def apply(self, signal):
+        if self.window_type == "Rectangle":
+            return self.apply_rectangle(signal)
+        elif self.window_type == "Hamming":
+            return self.apply_hamming(signal)
+        elif self.window_type == "Hanning":
+            return self.apply_hanning(signal)
+        elif self.window_type == "Gaussian":
+            if self.parameters is not None:
+                return self.apply_gaussian(signal, self.parameters)
+            else:
+                raise ValueError("Gaussian window requires parameters.")
+
+    def apply_rectangle(self, signal):
+        # Rectangle window does not modify the signal
+        return signal
+
+    def apply_hamming(self, signal):
+        # Apply the Hamming window to the signal
+        window = np.hamming(len(signal))
+        smoothed_signal = signal * window
+        return smoothed_signal
+
+    def apply_hanning(self, signal):
+        # Apply the Hanning window to the signal
+        window = np.hanning(len(signal))
+        smoothed_signal = signal * window
+        return smoothed_signal
+
+    def apply_gaussian(self, signal, sigma):
+        # Apply the Gaussian window to the signal with a specified standard deviation (sigma)
+        window = np.exp(-(np.arange(len(signal)) ** 2) / (2 * sigma ** 2))
+        smoothed_signal = signal * window
+        return smoothed_signal
+
+
 
 class MainWindow(QtWidgets.QMainWindow):    
     def __init__(self, *args, **kwargs):
@@ -71,25 +112,17 @@ class MainWindow(QtWidgets.QMainWindow):
                                         9: [10000 ,11000]
                                         }
         self.selected_mode = None
+        self.selected_window = None
         self.frame_layout = QHBoxLayout(self.sliders_frame)
-        # Connect the signal to set_combobox
-        self.set_combobox()
         # Connect the activated signal to a custom slot
-        self.modes_combobox.activated.connect(lambda: self.combobox_activated())
+        self.modes_combobox.activated.connect(lambda: self.modes_combobox_activated())
+        self.smoothing_window_combobox.activated.connect(lambda: self.smoothing_window_combobox_activated())
     
     def get_maloka(self , index):
         return self.dictnoary_values[index]
         
 #YOUR CODE HERE 
 # بسم الله الرحمن الرحييم
-    def set_combobox(self):
-        self.modes_combobox.addItem('Uniform Range')
-        self.modes_combobox.addItem('Musical Instruments')
-        self.modes_combobox.addItem('Animal Sounds')
-        self.modes_combobox.addItem('ECG Abnormalities')
-
-        self.load_btn.clicked.connect(lambda: self.open())
-
     def set_slider_range(self, selected_text):
         if selected_text == 0:
                     self.dictnoary_values = {0: [0, 1000],
@@ -151,13 +184,22 @@ class MainWindow(QtWidgets.QMainWindow):
     #         self.plot()
     #         self.play()
 
-    def combobox_activated(self):
+    def modes_combobox_activated(self):
         # Get the selected item's text and display it in the label
         selected_text = self.modes_combobox.currentIndex()
         # store the mode in a global variable 
         self.selected_mode = selected_text 
         self.set_slider_range(selected_text)
         self.add_slider(selected_text)
+
+    def smoothing_window_combobox_activated(self):
+        selected_item = self.smoothing_window_combobox.currentText()
+        self.selected_window = selected_item
+        if selected_item == 'Gaussian' :
+            self.lineEdit_2.setVisible(True)
+        else:
+            self.lineEdit_2.setVisible(False)
+
 
         
     def clear_layout(self ,layout):

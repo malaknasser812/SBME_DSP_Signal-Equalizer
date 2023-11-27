@@ -22,9 +22,9 @@ from scipy.io import wavfile
 plt.use('Qt5Agg')
 from music21 import *
 from music21.stream import Stream
-
-
-
+import librosa
+from pydub import AudioSegment
+from pydub.playback import play
 
 class CreateSlider:
     def __init__(self , index ):
@@ -43,15 +43,55 @@ class CreateSlider:
     def get_slider(self):
         return self.slider
 
-class Modes:
-    def __init__(self, name, labels, ranges, no_sliders):
+class Signal:
+    def __init__(self, name):
         self.name = name
-        self.labels = labels
-        self.ranges = ranges #(for each slider whats the range of freq. )
-        self.sliders = no_sliders
-        self.slider_values = [[0, 10, 1]]*len(list(labels))
+        self.data = []
+        self.time = []
+        self.sample_rate = None
+        self.Data_fft = None
+        self.Freq_splits = None
+        self.Amp_splits = None
 
+class SmoothingWindow:
+    def __init__(self, window_type, parameters=None):
+        self.window_type = window_type
+        self.parameters = parameters
 
+    def apply(self, signal):
+        if self.window_type == "Rectangle":
+            return self.apply_rectangle(signal)
+        elif self.window_type == "Hamming":
+            return self.apply_hamming(signal)
+        elif self.window_type == "Hanning":
+            return self.apply_hanning(signal)
+        elif self.window_type == "Gaussian":
+            if self.parameters is not None:
+                return self.apply_gaussian(signal, self.parameters)
+            else:
+                raise ValueError("Gaussian window requires parameters.")
+
+    def apply_rectangle(self, signal):
+        # Rectangle window does not modify the signal
+        return signal
+
+    def apply_hamming(self, signal):
+        # Apply the Hamming window to the signal
+        window = np.hamming(len(signal))
+        smoothed_signal = signal * window
+        return smoothed_signal
+
+    def apply_hanning(self, signal):
+        # Apply the Hanning window to the signal
+        window = np.hanning(len(signal))
+        smoothed_signal = signal * window
+        return smoothed_signal
+
+    def apply_gaussian(self, signal, sigma):
+        # Apply the Gaussian window to the signal with a specified standard deviation (sigma)
+        window = np.exp(-(np.arange(len(signal)) ** 2) / (2 * sigma ** 2))
+        smoothed_signal = signal * window
+        return smoothed_signal
 
 class MainWindow(QtWidgets.QMainWindow):    
     def __init__(self, *args, **kwargs):
@@ -73,23 +113,21 @@ class MainWindow(QtWidgets.QMainWindow):
         self.selected_mode = None
         self.frame_layout = QHBoxLayout(self.sliders_frame)
         # Connect the signal to set_combobox
-        self.set_combobox()
+        self.modes_combobox
         # Connect the activated signal to a custom slot
         self.modes_combobox.activated.connect(lambda: self.combobox_activated())
-    
+        self.smoothing_window_combobox.activated.connect(lambda: self.smoothing_window_combobox_activated())
+        self.lineEdit_2.setVisible(False)  # Initially hide the line edit for Gaussian window
+        self.current_signal=None
+        # self.audio_data = np.array([])
+        # self.plot_audio()
+        self.load_btn.clicked.connect(lambda: self.load())
+        self.apply_btn.clicked.connect(lambda: self.apply_smoothing())
+
     def get_maloka(self , index):
         return self.dictnoary_values[index]
         
-#YOUR CODE HERE 
-# بسم الله الرحمن الرحييم
-    def set_combobox(self):
-        self.modes_combobox.addItem('Uniform Range')
-        self.modes_combobox.addItem('Musical Instruments')
-        self.modes_combobox.addItem('Animal Sounds')
-        self.modes_combobox.addItem('ECG Abnormalities')
-
-        self.load_btn.clicked.connect(lambda: self.open())
-
+#OUR CODE HERE 
     def set_slider_range(self, selected_text):
         if selected_text == 0:
                     self.dictnoary_values = {0: [0, 1000],
@@ -150,7 +188,109 @@ class MainWindow(QtWidgets.QMainWindow):
     #         self.p = vlc.MediaPlayer(path)
     #         self.plot()
     #         self.play()
+    def load(self):
+        path_info = QtWidgets.QFileDialog.getOpenFileName(
+            None, "Select a signal...",os.getenv('HOME'), filter="Raw Data (*.csv *.wav *.mp3)")
+        path = path_info[0]
+        data = []
+        time = []
+        sample_rate = 0
+        signal_name = path.split('/')[-1].split('.')[0]
+        type = path.split('.')[-1]
+        if type in ["wav", "mp3"]:
+            data, sample_rate = librosa.load(path)
+            Duration = librosa.get_duration(y=data, sr=sample_rate)
+            time = np.linspace(0, Duration, len(data))
+            self.audio_data = data
+        elif type == "csv":
+            data_of_signal = pd.read_csv(path)  
+            time = data_of_signal.values[:, 0]
+            data = data_of_signal.values[:, 1]
+        signal = Signal(signal_name)
+        signal.data = data
+        signal.time = time
+        signal.sample_rate = sample_rate
+        T = 1 / signal.sample_rate
+        x_data, y_data = self.get_Fourier(signal, T, len(signal.data))
+        signal.Data_fft = np.array([x_data, y_data])
+        self.current_signal = signal
+        self.Data_spliting(signal)
+        self.Plot(signal)
 
+    def get_Fourier(self, signal, T, N):
+            f_No = np.linspace(0.0, 1.0/(2.0*T), N//2) 
+            freq_values = np.fft.fft(signal.data, N)  
+            freq_values = (2/N) * np.abs(freq_values[:N//2])
+            return f_No, freq_values
+    
+    def Data_spliting(self, signal):
+        slices = 10 if self.modes_combobox.currentIndex() == 0 else 4
+        x_data = signal.Data_fft[0]
+        y_data = signal.Data_fft[1]
+        x_data_slices = np.array_split(x_data, slices)
+        y_data_slices = np.array_split(y_data, slices)
+        min_slice = min(len(slice) for slice in x_data_slices)
+        x_data_slices = [slice[:min_slice] for slice in x_data_slices]
+        y_data_slices = [slice[:min_slice] for slice in y_data_slices]
+        # Convert to 2D arrays
+        signal.Freq_splits = np.array(x_data_slices).T 
+        # to change from rows to columns get transpose
+        signal.Amp_splits = np.array(y_data_slices).T
+
+    def Plot(self, signal):
+            if signal:
+                self.frequancy_graph.clear()
+                self.frequancy_graph.setLabel('left', "Amplitude")
+                self.frequancy_graph.setLabel('bottom', "Frequency")
+                # Accumulate data for all columns
+                x_values, y_values = [], []
+                for i in range(signal.Freq_splits.shape[1]):
+                    x_values.extend(signal.Freq_splits[:, i])
+                    y_values.extend(signal.Amp_splits[:, i])
+                # Plot all columns together
+                plot_item = self.frequancy_graph.plot(
+                    x_values, y_values, name=f"{signal.name}")
+                #add legend to the graph 
+                if self.frequancy_graph.plotItem.legend is not None:
+                    self.frequancy_graph.plotItem.legend.clear()
+                legend = self.frequancy_graph.addLegend()
+                legend.addItem(plot_item, name=f"{signal.name}")
+                # Apply smoothing window if selected
+                smoothing_window = self.smoothing_window_combobox.currentText()
+                if smoothing_window != "None":
+                    self.smooth_and_plot(signal, smoothing_window)
+
+    def smooth_and_plot(self, signal, smoothing_window):
+    # Apply the selected smoothing window to the data
+        window_parameters = None
+        if smoothing_window == "Gaussian":
+            sigma = float(self.lineEdit_2.text())
+            window_parameters = {"sigma": sigma}
+        smoothing_window_obj = SmoothingWindow(
+            smoothing_window, window_parameters)
+        smoothed_data = smoothing_window_obj.apply(signal.Amp_splits)
+
+        if smoothed_data is not None:
+            # Plot the smoothed data
+            x_values_smooth, y_values_smooth = [], []
+            for i in range(smoothed_data.shape[1]):
+                x_values_smooth.extend(signal.Freq_splits[:, i])
+                y_values_smooth.extend(smoothed_data[:, i])
+            plot_item_smooth = self.frequancy_graph.plot(
+                x_values_smooth, y_values_smooth, pen='r', name=f"{signal.name} (Smoothed)")
+            # Add legend for the smoothed plot
+            legend_smooth = self.frequancy_graph.addLegend()
+            legend_smooth.addItem(
+                plot_item_smooth, name=f"{signal.name} (Smoothed)")
+        else:
+            print("Error: Smoothing operation failed.")
+        
+    def apply_smoothing(self):
+        if self.current_signal:
+            smoothing_window = self.smoothing_window_combobox.currentText()
+            if smoothing_window != "None":
+                self.smooth_and_plot(self.current_signal, smoothing_window)
+    
     def combobox_activated(self):
         # Get the selected item's text and display it in the label
         selected_text = self.modes_combobox.currentIndex()
@@ -159,7 +299,11 @@ class MainWindow(QtWidgets.QMainWindow):
         self.set_slider_range(selected_text)
         self.add_slider(selected_text)
 
-        
+    def smoothing_window_combobox_activated(self):
+        selected_item = self.smoothing_window_combobox.currentText()
+        self.selected_window = selected_item
+        # Show or hide the line edit based on the selected smoothing window
+        self.lineEdit_2.setVisible(selected_item == 'Gaussian')
     def clear_layout(self ,layout):
         for i in reversed(range(layout.count())):
             item = layout.itemAt(i)

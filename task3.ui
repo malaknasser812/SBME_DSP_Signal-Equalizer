@@ -89,6 +89,26 @@ background-color:#ffffff</string>
                <property name="styleSheet">
                 <string notr="true">background-color: #ffffff;</string>
                </property>
+               <item>
+                <property name="text">
+                 <string>Rectangular</string>
+                </property>
+               </item>
+               <item>
+                <property name="text">
+                 <string>Hamming</string>
+                </property>
+               </item>
+               <item>
+                <property name="text">
+                 <string>Hanning</string>
+                </property>
+               </item>
+               <item>
+                <property name="text">
+                 <string>Gaussian</string>
+                </property>
+               </item>
               </widget>
              </item>
             </layout>
@@ -299,8 +319,28 @@ color:#34455e;
                 <string notr="true">background-color: #ffffff;</string>
                </property>
                <property name="currentIndex">
-                <number>-1</number>
+                <number>0</number>
                </property>
+               <item>
+                <property name="text">
+                 <string>Uniform Range</string>
+                </property>
+               </item>
+               <item>
+                <property name="text">
+                 <string>Musical Instruments</string>
+                </property>
+               </item>
+               <item>
+                <property name="text">
+                 <string>Animal Sounds</string>
+                </property>
+               </item>
+               <item>
+                <property name="text">
+                 <string>ECG Abnormalities</string>
+                </property>
+               </item>
               </widget>
              </item>
              <item>
@@ -552,7 +592,7 @@ color:#34455e;
              </widget>
             </item>
             <item>
-             <widget class="PlotWidget" name="frequancy_effect_graph" native="true"/>
+             <widget class="PlotWidget" name="frequancy_graph" native="true"/>
             </item>
            </layout>
           </item>

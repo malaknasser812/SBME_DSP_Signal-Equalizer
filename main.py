@@ -111,6 +111,7 @@ class MainWindow(QtWidgets.QMainWindow):
                                         9: [10000 ,11000]
                                         }
         self.selected_mode = None
+        self.selected_window = None
         self.frame_layout = QHBoxLayout(self.sliders_frame)
         # Connect the signal to set_combobox
         self.modes_combobox

@@ -25,6 +25,8 @@ from music21.stream import Stream
 import librosa
 from pydub import AudioSegment
 from pydub.playback import play
+import bisect
+
 
 class CreateSlider:
     def __init__(self , index ):
@@ -50,8 +52,7 @@ class Signal:
         self.time = []
         self.sample_rate = None
         self.Data_fft = None
-        self.Freq_splits = None
-        self.Amp_splits = None
+        self.Ranges = []
 
 class SmoothingWindow:
     def __init__(self, window_type, parameters=None):
@@ -99,17 +100,16 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # Load the UI Page
         uic.loadUi(r'task3.ui', self)
-        self.dictnoary_values = {0: [0, 1000],
-                                        1: [1000, 2000],
-                                        2: [3000, 4000],
-                                        3: [4000, 5000],
-                                        4: [5000, 6000],
-                                        5: [6000, 7000],
-                                        6: [7000, 8000],
-                                        7: [8000, 9000],
-                                        8: [9000, 10000],
-                                        9: [10000 ,11000]
-                                        }
+        # self.dictnoary_values = {0: [0, 1000],
+        #                                 1: [1000, 2000],
+        #                                 2: [3000, 4000],
+        #                                 3: [4000, 5000],
+        #                                 4: [5000, 6000],
+        #                                 5: [6000, 7000],
+        #                                 6: [7000, 8000],
+        #                                 7: [8000, 9000],
+        #                                 8: [9000, 10000],
+        #                                 9: [10000 ,11000]}
         self.selected_mode = None
         self.selected_window = None
         self.frame_layout = QHBoxLayout(self.sliders_frame)
@@ -130,43 +130,43 @@ class MainWindow(QtWidgets.QMainWindow):
         
 #OUR CODE HERE 
     def set_slider_range(self, selected_text):
-        if selected_text == 0:
-                    self.dictnoary_values = {0: [0, 1000],
-                                        1: [1000, 2000],
-                                        2: [3000, 4000],
-                                        3: [4000, 5000],
-                                        4: [5000, 6000],
-                                        5: [6000, 7000],
-                                        6: [7000, 8000],
-                                        7: [8000, 9000],
-                                        8: [9000, 10000],
-                                        9: [10000 ,11000]
-                                        }
-                    values_slider = [[0, 10, 1]]*len(list(self.dictnoary_values.keys()))
+        # if selected_text == 0:
+        #             # self.dictnoary_values = {0: [0, 1000],
+        #             #                     1: [1000, 2000],
+        #             #                     2: [3000, 4000],
+        #             #                     3: [4000, 5000],
+        #             #                     4: [5000, 6000],
+        #             #                     5: [6000, 7000],
+        #             #                     6: [7000, 8000],
+        #             #                     7: [8000, 9000],
+        #             #                     8: [9000, 10000],
+        #             #                     9: [10000 ,11000]
+        #             #                     }
+        #             values_slider = [[0, 10, 1]]*len(list(self.dictnoary_values.keys()))
 
-        elif selected_text == 'Animals':
-            self.dictnoary_values = {"cat": [1900, 5000],
-                                "dog": [1500, 3000],
-                                "owl": [500, 2000],
-                                "lion": [490, 2800]
+        if selected_text == 'Animal Sounds':
+            self.dictnoary_values = {"cat": [400, 420],
+                                "dog": [600, 700],
+                                "owl": [1300, 1600],
+                                "lion": [3000, 4000]
                                 }
             values_slider = [[0, 10, 1]]*len(list(self.dictnoary_values.keys()))
 
         elif selected_text == 'Music Instrument':
-            self.dictnoary_values = {"Drum ": [0, 500],
-                                "Flute": [500, 1000],
-                                "Key": [1000, 2000],
-                                "Piano": [2000, 5000]
+            self.dictnoary_values = {"Drum ": [0, 150],
+                                "Flute": [150, 600],
+                                "Key": [600, 800],
+                                "Piano": [800, 1200]
                                 }
             values_slider = [[0, 10, 1]]*len(list(self.dictnoary_values.keys()))
 
-        elif selected_text == 'ECG':
+        elif selected_text == 'ECG Abnormalities':
             self.dictnoary_values = {"Arithmia_1 ": [0, 500],
                                 "Arithmia_2": [500, 1000],
                                 "Arithmia_3": [1000, 2000]
                                 }
             values_slider = [[0, 10, 1]]*len(list(self.dictnoary_values.keys()))
-
+    
     # def open(self):
     #         self.fname = QFileDialog.getOpenFileName(
     #             None, "Select a file...", os.getenv('HOME'), filter="All files (*)")
@@ -193,98 +193,77 @@ class MainWindow(QtWidgets.QMainWindow):
         path_info = QtWidgets.QFileDialog.getOpenFileName(
             None, "Select a signal...",os.getenv('HOME'), filter="Raw Data (*.csv *.wav *.mp3)")
         path = path_info[0]
-        data = []
         time = []
         sample_rate = 0
+        data = []
         signal_name = path.split('/')[-1].split('.')[0]
         type = path.split('.')[-1]
         if type in ["wav", "mp3"]:
             data, sample_rate = librosa.load(path)
             Duration = librosa.get_duration(y=data, sr=sample_rate)
             time = np.linspace(0, Duration, len(data))
-            self.audio_data = data
+            # self.audio_data = data
         elif type == "csv":
             data_of_signal = pd.read_csv(path)  
             time = data_of_signal.values[:, 0]
             data = data_of_signal.values[:, 1]
-        signal = Signal(signal_name)
-        signal.data = data
-        signal.time = time
-        signal.sample_rate = sample_rate
-        T = 1 / signal.sample_rate
-        x_data, y_data = self.get_Fourier(signal, T, len(signal.data))
-        signal.Data_fft = np.array([x_data, y_data])
-        self.current_signal = signal
-        self.Data_spliting(signal)
-        self.Plot(signal)
+        self.current_signal = Signal(signal_name)
+        self.current_signal.data = data
+        self.current_signal.time = time
+        self.current_signal.sample_rate = sample_rate
+        T = 1 / self.current_signal.sample_rate
+        x_data, y_data = self.get_Fourier(T, len(self.current_signal.data))
+        self.current_signal.Data_fft = [x_data, y_data]
+        self.Range_spliting()
+        self.Plot()
 
-    def get_Fourier(self, signal, T, N):
-            f_No = np.linspace(0.0, 1.0/(2.0*T), N//2) 
-            freq_values = np.fft.fft(signal.data, N)  
-            freq_values = (2/N) * np.abs(freq_values[:N//2])
-            return f_No, freq_values
+    def get_Fourier(self, T, N):
+            freq_mag = np.linspace(0.0, 1.0/(2.0*T), N//2) 
+            freq_amp = np.fft.fft(self.current_signal.data, N)  
+            freq_amp = (2/N) * np.abs(freq_amp[:N//2])
+            return freq_mag, freq_amp
     
-    def Data_spliting(self, signal):
-        slices = 10 if self.modes_combobox.currentIndex() == 0 else 4
-        x_data = signal.Data_fft[0]
-        y_data = signal.Data_fft[1]
-        x_data_slices = np.array_split(x_data, slices)
-        y_data_slices = np.array_split(y_data, slices)
-        min_slice = min(len(slice) for slice in x_data_slices)
-        x_data_slices = [slice[:min_slice] for slice in x_data_slices]
-        y_data_slices = [slice[:min_slice] for slice in y_data_slices]
-        # Convert to 2D arrays
-        signal.Freq_splits = np.array(x_data_slices).T 
-        # to change from rows to columns get transpose
-        signal.Amp_splits = np.array(y_data_slices).T
+    def Range_spliting(self):
+        if self.modes_combobox.currentIndex() == 'Animal Sounds' or 'Music Instrument' or 'ECG Abnormalities':
+            freq= self.current_signal.Data_fft[0] #index zero for mag of freq
+            print(self.dictnoary_values.items())
+            for _,(start,end) in self.dictnoary_values.items():
+                start_ind = bisect.bisect_left(freq, start)
+                end_ind = bisect.bisect_right(freq, end) - 1  # Adjusted for inclusive end index
+                self.current_signal.Ranges.append((start_ind, end_ind))
+                print(self.current_signal.Ranges)
 
-    def Plot(self, signal):
+        elif self.modes_combobox.currentIndex() == 'Uniform Range':
+            batch_size = int(len(self.current_signal.Data_fft[0])/10) 
+            self.current_signal.Ranges = [(i*batch_size,(i+1)*batch_size)for i in range(10)]           
+
+    def Plot(self):
+            signal= self.current_signal
             if signal:
                 self.frequancy_graph.clear()
-                self.frequancy_graph.setLabel('left', "Amplitude")
-                self.frequancy_graph.setLabel('bottom', "Frequency")
-                # Accumulate data for all columns
-                x_values, y_values = [], []
-                for i in range(signal.Freq_splits.shape[1]):
-                    x_values.extend(signal.Freq_splits[:, i])
-                    y_values.extend(signal.Amp_splits[:, i])
-                # Plot all columns together
+                self.frequancy_graph.setLabel('left', "Amplitude(mv)")
+                self.frequancy_graph.setLabel('bottom', "Frequency(Hz)")
                 plot_item = self.frequancy_graph.plot(
-                    x_values, y_values, name=f"{signal.name}")
+                    signal.Data_fft[0],signal.Data_fft[1], name=f"{signal.name}")
+                # for i in range(len(signal.Ranges)):
                 #add legend to the graph 
                 if self.frequancy_graph.plotItem.legend is not None:
                     self.frequancy_graph.plotItem.legend.clear()
-                legend = self.frequancy_graph.addLegend()
+                legend = self.frequancy_graph.addLegend(pos='right')
                 legend.addItem(plot_item, name=f"{signal.name}")
-                # Apply smoothing window if selected
-                smoothing_window = self.smoothing_window_combobox.currentText()
-                if smoothing_window != "None":
-                    self.smooth_and_plot(signal, smoothing_window)
 
-    def smooth_and_plot(self, signal, smoothing_window):
-    # Apply the selected smoothing window to the data
-        window_parameters = None
-        if smoothing_window == "Gaussian":
-            sigma = float(self.lineEdit_2.text())
-            window_parameters = {"sigma": sigma}
-        smoothing_window_obj = SmoothingWindow(
-            smoothing_window, window_parameters)
-        smoothed_data = smoothing_window_obj.apply(signal.Amp_splits)
-
-        if smoothed_data is not None:
-            # Plot the smoothed data
-            x_values_smooth, y_values_smooth = [], []
-            for i in range(smoothed_data.shape[1]):
-                x_values_smooth.extend(signal.Freq_splits[:, i])
-                y_values_smooth.extend(smoothed_data[:, i])
-            plot_item_smooth = self.frequancy_graph.plot(
-                x_values_smooth, y_values_smooth, pen='r', name=f"{signal.name} (Smoothed)")
-            # Add legend for the smoothed plot
-            legend_smooth = self.frequancy_graph.addLegend()
-            legend_smooth.addItem(
-                plot_item_smooth, name=f"{signal.name} (Smoothed)")
-        else:
-            print("Error: Smoothing operation failed.")
+                # Add vertical lines for start and end indices for each mode
+                for start_ind, end_ind in signal.Ranges:
+                    v_line_start = pg.InfiniteLine(pos=signal.Data_fft[0][start_ind], angle=90, movable=False, pen=pg.mkPen('r', width=2))
+                    v_line_end = pg.InfiniteLine(pos=signal.Data_fft[0][end_ind], angle=90, movable=False, pen=pg.mkPen('r', width=2))
+                    
+                    self.frequancy_graph.addItem(v_line_start)
+                    self.frequancy_graph.addItem(v_line_end)
+                # # Add vertical line at the end for 'Uniform Range'
+                # if self.modes_combobox.currentIndex() == 'Uniform Range' and signal.Ranges:
+                #     _, end_ind = signal.Ranges[-1]
+                #     v_line_end_uniform = pg.InfiniteLine(pos=signal.Data_fft[0][end_ind], angle=90, movable=False, pen=pg.mkPen('b', width=2))
+                #     self.frequancy_graph.addItem(v_line_end_uniform)
         
     def apply_smoothing(self):
         if self.current_signal:

@@ -97,17 +97,8 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # Load the UI Page
         uic.loadUi(r'task3.ui', self)
-        # self.dictnoary_values = {0: [0, 1000],
-        #                                 1: [1000, 2000],
-        #                                 2: [3000, 4000],
-        #                                 3: [4000, 5000],
-        #                                 4: [5000, 6000],
-        #                                 5: [6000, 7000],
-        #                                 6: [7000, 8000],
-        #                                 7: [8000, 9000],
-        #                                 8: [9000, 10000],
-        #                                 9: [10000 ,11000]}
-        self.selected_mode = None
+        self.dictnoary_values = {}
+        self.selected_mode = 'Uniform Range'
         self.selected_window = None
         self.frame_layout = QHBoxLayout(self.sliders_frame)
         # Connect the signal to set_combobox
@@ -130,22 +121,22 @@ class MainWindow(QtWidgets.QMainWindow):
         self.player.setAudioOutput(self.audio)
 
 #OUR CODE HERE 
-    def set_slider_range(self, selected_text):
-        # if selected_text == 0:
-        #             # self.dictnoary_values = {0: [0, 1000],
-        #             #                     1: [1000, 2000],
-        #             #                     2: [3000, 4000],
-        #             #                     3: [4000, 5000],
-        #             #                     4: [5000, 6000],
-        #             #                     5: [6000, 7000],
-        #             #                     6: [7000, 8000],
-        #             #                     7: [8000, 9000],
-        #             #                     8: [9000, 10000],
-        #             #                     9: [10000 ,11000]
-        #             #                     }
-        #             values_slider = [[0, 10, 1]]*len(list(self.dictnoary_values.keys()))
+    def set_slider_range(self):
+        if self.selected_mode == 'Uniform Range':
+                    self.dictnoary_values = {0: [0, 1000],
+                                        1: [1000, 2000],
+                                        2: [3000, 4000],
+                                        3: [4000, 5000],
+                                        4: [5000, 6000],
+                                        5: [6000, 7000],
+                                        6: [7000, 8000],
+                                        7: [8000, 9000],
+                                        8: [9000, 10000],
+                                        9: [10000 ,11000]
+                                        }
+                    values_slider = [[0, 10, 1]]*len(list(self.dictnoary_values.keys()))
 
-        if selected_text == 'Animal Sounds':
+        if self.selected_mode == 'Animal Sounds':
             self.dictnoary_values = {"cat": [400, 420],
                                 "dog": [600, 700],
                                 "owl": [1300, 1600],
@@ -153,7 +144,7 @@ class MainWindow(QtWidgets.QMainWindow):
                                 }
             values_slider = [[0, 10, 1]]*len(list(self.dictnoary_values.keys()))
 
-        elif selected_text == 'Music Instrument':
+        elif self.selected_mode == 'Music Instruments':
             self.dictnoary_values = {"Drum ": [0, 150],
                                 "Flute": [150, 600],
                                 "Key": [600, 800],
@@ -161,12 +152,15 @@ class MainWindow(QtWidgets.QMainWindow):
                                 }
             values_slider = [[0, 10, 1]]*len(list(self.dictnoary_values.keys()))
 
-        elif selected_text == 'ECG Abnormalities':
+        elif self.selected_mode == 'ECG Abnormalities':
             self.dictnoary_values = {"Arithmia_1 ": [0, 500],
                                 "Arithmia_2": [500, 1000],
                                 "Arithmia_3": [1000, 2000]
                                 }
             values_slider = [[0, 10, 1]]*len(list(self.dictnoary_values.keys()))
+
+
+
     def load(self):
         path_info = QtWidgets.QFileDialog.getOpenFileName(
             None, "Select a signal...",os.getenv('HOME'), filter="Raw Data (*.csv *.wav *.mp3)")
@@ -193,6 +187,7 @@ class MainWindow(QtWidgets.QMainWindow):
         T = 1 / self.current_signal.sample_rate
         x_data, y_data = self.get_Fourier(T, len(self.current_signal.data))
         self.current_signal.Data_fft = [x_data, y_data]
+        self.set_slider_range()
         self.Range_spliting()
         self.Plot("original")
 
@@ -201,9 +196,10 @@ class MainWindow(QtWidgets.QMainWindow):
             freq_amp = np.fft.fft(self.current_signal.data, N)  
             freq_amp = (2/N) * np.abs(freq_amp[:N//2])
             return freq_mag, freq_amp
-    
+
     def Range_spliting(self):
-        if self.modes_combobox.currentIndex() == 'Animal Sounds' or 'Music Instrument' or 'ECG Abnormalities':
+        print (self.modes_combobox.currentText())
+        if self.modes_combobox.currentText() == 'Animal Sounds' or 'Music Instrument' or 'ECG Abnormalities':
             freq= self.current_signal.Data_fft[0] #index zero for mag of freq
             print(self.dictnoary_values.items())
             for _,(start,end) in self.dictnoary_values.items():
@@ -212,7 +208,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.current_signal.Ranges.append((start_ind, end_ind))
                 print(self.current_signal.Ranges)
 
-        elif self.modes_combobox.currentIndex() == 'Uniform Range':
+        elif self.modes_combobox.currentText() == 'Uniform Range':
             batch_size = int(len(self.current_signal.Data_fft[0])/10) 
             self.current_signal.Ranges = [(i*batch_size,(i+1)*batch_size)for i in range(10)]           
 
@@ -260,7 +256,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 #     _, end_ind = signal.Ranges[-1]
                 #     v_line_end_uniform = pg.InfiniteLine(pos=signal.Data_fft[0][end_ind], angle=90, movable=False, pen=pg.mkPen('b', width=2))
                 #     self.frequancy_graph.addItem(v_line_end_uniform)
-                
+
     def play_audio(self,index):
         if index == 0: #hear original
             if self.player.mediaStatus == QMediaPlayer.PlaybackState.PlayingState:
@@ -302,11 +298,13 @@ class MainWindow(QtWidgets.QMainWindow):
     
     def combobox_activated(self):
         # Get the selected item's text and display it in the label
-        selected_text = self.modes_combobox.currentIndex()
+        selected_text = self.modes_combobox.currentText()
+        selected_index = self.modes_combobox.currentIndex()
         # store the mode in a global variable 
         self.selected_mode = selected_text 
-        self.set_slider_range(selected_text)
-        self.add_slider(selected_text)
+        self.set_slider_range()
+        self.add_slider(selected_index)
+        self.Range_spliting()
 
     def smoothing_window_combobox_activated(self):
         selected_item = self.smoothing_window_combobox.currentText()

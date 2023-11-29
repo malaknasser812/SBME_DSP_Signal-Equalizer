@@ -101,7 +101,7 @@ class MainWindow(QtWidgets.QMainWindow):
         # Load the UI Page
         uic.loadUi(r'task3.ui', self)
         self.dictnoary_values = {}
-        self.selected_mode = 'Uniform Range'
+        self.selected_mode = self.modes_combobox.currentText()
         self.selected_window = None
         self.frame_layout = QHBoxLayout(self.sliders_frame)
         # Connect the signal to set_combobox
@@ -137,21 +137,22 @@ class MainWindow(QtWidgets.QMainWindow):
 
 #OUR CODE HERE 
     def set_slider_range(self):
-        if self.selected_mode == 'Uniform Range':
-                    self.dictnoary_values = {0: [0, 1000],
-                                        1: [1000, 2000],
-                                        2: [3000, 4000],
-                                        3: [4000, 5000],
-                                        4: [5000, 6000],
-                                        5: [6000, 7000],
-                                        6: [7000, 8000],
-                                        7: [8000, 9000],
-                                        8: [9000, 10000],
-                                        9: [10000 ,11000]
-                                        }
-                    values_slider = [[0, 10, 1]]*len(list(self.dictnoary_values.keys()))
+        # if self.selected_mode == 'Uniform Range':
+        #             self.dictnoary_values = {0: [0, 1000],
+        #                                 1: [1000, 2000],
+        #                                 2: [3000, 4000],
+        #                                 3: [4000, 5000],
+        #                                 4: [5000, 6000],
+        #                                 5: [6000, 7000],
+        #                                 6: [7000, 8000],
+        #                                 7: [8000, 9000],
+        #                                 8: [9000, 10000],
+        #                                 9: [10000 ,11000]
+        #                                 }
+        #             values_slider = [[0, 10, 1]]*len(list(self.dictnoary_values.keys()))
 
         if self.selected_mode == 'Animal Sounds':
+            print('animal')
             self.dictnoary_values = {"cat": [400, 420],
                                 "dog": [600, 700],
                                 "owl": [1300, 1600],
@@ -159,7 +160,7 @@ class MainWindow(QtWidgets.QMainWindow):
                                 }
             values_slider = [[0, 10, 1]]*len(list(self.dictnoary_values.keys()))
 
-        elif self.selected_mode == 'Music Instruments':
+        elif self.selected_mode == 'Musical Instruments':
             self.dictnoary_values = {"Drum ": [0, 150],
                                 "Flute": [150, 600],
                                 "Key": [600, 800],
@@ -168,11 +169,14 @@ class MainWindow(QtWidgets.QMainWindow):
             values_slider = [[0, 10, 1]]*len(list(self.dictnoary_values.keys()))
 
         elif self.selected_mode == 'ECG Abnormalities':
+            print ('ecg')
             self.dictnoary_values = {"Arithmia_1 ": [0, 500],
                                 "Arithmia_2": [500, 1000],
                                 "Arithmia_3": [1000, 2000]
                                 }
             values_slider = [[0, 10, 1]]*len(list(self.dictnoary_values.keys()))
+        
+        else : self.dictnoary_values = {}
 
 
 

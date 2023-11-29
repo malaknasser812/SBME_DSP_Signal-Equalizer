@@ -298,10 +298,8 @@ class MainWindow(QtWidgets.QMainWindow):
     
     def combobox_activated(self):
         # Get the selected item's text and display it in the label
-        selected_text = self.modes_combobox.currentText()
         selected_index = self.modes_combobox.currentIndex()
         # store the mode in a global variable 
-        self.selected_mode = selected_text 
         self.set_slider_range()
         self.add_slider(selected_index)
         self.Range_spliting()
@@ -317,8 +315,8 @@ class MainWindow(QtWidgets.QMainWindow):
             if item.widget():
                 item.widget().deleteLater() 
 
-    def add_slider(self , selected_text):          
-        if selected_text == 0: #uniform range
+    def add_slider(self , selected_index):          
+        if selected_index == 0: #uniform range
             self.clear_layout(self.frame_layout)
             for i in range(10):
 

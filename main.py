@@ -9,12 +9,14 @@ import matplotlib.pyplot
 import matplotlib as plt
 import pyqtgraph as pg
 from PyQt5 import QtWidgets, QtCore, uic
+from PyQt5.QtMultimedia import QMediaPlayer, QMediaContent
 from PySide6.QtMultimedia import QMediaPlayer, QAudioOutput
 from PySide6.QtCore import QUrl, QTime
 from PySide6.QtGui import QIcon
+from PySide6.QtCore import QUrl
+import vlc
 #from pydub import AudioSegment
 from PyQt5.Qt import Qt
-#import vlc
 import os
 import sys
 from scipy.io import wavfile
@@ -25,6 +27,7 @@ import librosa
 from pydub import AudioSegment
 from pydub.playback import play
 import bisect
+import pyqtgraph as pg
 
 
 class CreateSlider:
@@ -111,14 +114,26 @@ class MainWindow(QtWidgets.QMainWindow):
         # self.audio_data = np.array([])
         # self.plot_audio()
         self.load_btn.clicked.connect(lambda: self.load())
-        self.hear_orig_btn.clicked.connect(lambda: self.play_audio(0))
-        self.hear_eq_btn.clicked.connect(lambda: self.play_audio(1))
+        self.hear_orig_btn.clicked.connect(lambda: self.playMusic ())
+        self.hear_eq_btn.clicked.connect(lambda: self.playMusic())
         self.apply_btn.clicked.connect(lambda: self.apply_smoothing())
 
-        self.player = QMediaPlayer()
-        self.audio = QAudioOutput()
+        # self.player = QMediaPlayer()
+        # self.audio = QAudioOutput()
 
-        self.player.setAudioOutput(self.audio)
+        # self.player.setAudioOutput(self.audio)
+        # self.audio.setVolume(100)
+
+        self.timer = QtCore.QTimer()
+        self.timer.setInterval(200)
+        # self.timer.timeout.connect(self.position_changed)
+
+        self.changed = True
+
+        self.line = pg.InfiniteLine(pos=0.1, angle=90, pen=None, movable=False)
+        
+    
+        
 
 #OUR CODE HERE 
     def set_slider_range(self):
@@ -168,8 +183,20 @@ class MainWindow(QtWidgets.QMainWindow):
         time = []
         sample_rate = 0
         data = []
-        signal_name = path.split('/')[-1].split('.')[0]
-        self.player.setSource(QUrl.fromLocalFile(signal_name))
+        signal_name = path.split('/')[-1].split('.')[0] 
+
+        if '.mp3' in path:
+            song = AudioSegment.from_mp3(path)
+            song.export(r"./final.wav", format="wav")
+            self.f_rate, self.yData = wavfile.read(r"./final.wav")
+        else:
+            self.f_rate, self.yData = wavfile.read(path)
+
+        self.player = vlc.MediaPlayer(path)
+        self.player.audio_set_volume(50)
+        
+
+
         type = path.split('.')[-1]
         if type in ["wav", "mp3"]:
             data, sample_rate = librosa.load(path)
@@ -201,12 +228,12 @@ class MainWindow(QtWidgets.QMainWindow):
         print (self.modes_combobox.currentText())
         if self.modes_combobox.currentText() == 'Animal Sounds' or 'Music Instrument' or 'ECG Abnormalities':
             freq= self.current_signal.Data_fft[0] #index zero for mag of freq
-            print(self.dictnoary_values.items())
+            #print(self.dictnoary_values.items())
             for _,(start,end) in self.dictnoary_values.items():
                 start_ind = bisect.bisect_left(freq, start)
                 end_ind = bisect.bisect_right(freq, end) - 1  # Adjusted for inclusive end index
                 self.current_signal.Ranges.append((start_ind, end_ind))
-                print(self.current_signal.Ranges)
+                #print(self.current_signal.Ranges)
 
         elif self.modes_combobox.currentText() == 'Uniform Range':
             batch_size = int(len(self.current_signal.Data_fft[0])/10) 
@@ -257,12 +284,38 @@ class MainWindow(QtWidgets.QMainWindow):
                 #     v_line_end_uniform = pg.InfiniteLine(pos=signal.Data_fft[0][end_ind], angle=90, movable=False, pen=pg.mkPen('b', width=2))
                 #     self.frequancy_graph.addItem(v_line_end_uniform)
 
-    def play_audio(self,index):
-        if index == 0: #hear original
-            if self.player.mediaStatus == QMediaPlayer.PlaybackState.PlayingState:
-                self.player.pause()
-            else:
-                self.player.play()
+    def playMusic(self):
+        if self.changed == True:
+            self.timer.start()
+            self.player.play()
+            self.changed = False
+            print('hear original clicked')
+            self.original_graph.addItem(self.line)
+            # self.position_changed()
+
+        else:
+            self.Pause()
+            self.changed = True
+
+    def Pause(self):
+        self.player.pause()
+        self.timer.stop()
+
+    # def position_changed(self): 
+    #     current_time = self.player.get_time()
+    #     total_duration = self.player.get_length()
+
+    #     if total_duration != 0:
+    #         progress = current_time / total_duration
+    #         max_index = self.original_graph.getViewBox().width()
+
+    #         # Calculate the index based on the previous position
+    #         previous_position = progress * max_index/100
+    #         index = int(previous_position * self.f_rate / 1000)
+
+    #         # Ensure the index is within the bounds of the plotted signal
+    #         index = max(0, min(index, max_index))
+    #         self.line.setPos(index)
 
 
     def smooth_and_plot(self, signal, smoothing_window):

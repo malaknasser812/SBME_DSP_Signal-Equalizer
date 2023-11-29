@@ -225,15 +225,16 @@ class MainWindow(QtWidgets.QMainWindow):
             return freq_mag, freq_amp
 
     def Range_spliting(self):
+        self.set_slider_range()
         print (self.modes_combobox.currentText())
         if self.modes_combobox.currentText() == 'Animal Sounds' or 'Music Instrument' or 'ECG Abnormalities':
             freq= self.current_signal.Data_fft[0] #index zero for mag of freq
-            #print(self.dictnoary_values.items())
+            print(self.dictnoary_values.items())
             for _,(start,end) in self.dictnoary_values.items():
                 start_ind = bisect.bisect_left(freq, start)
                 end_ind = bisect.bisect_right(freq, end) - 1  # Adjusted for inclusive end index
                 self.current_signal.Ranges.append((start_ind, end_ind))
-                #print(self.current_signal.Ranges)
+                print(self.current_signal.Ranges)
 
         elif self.modes_combobox.currentText() == 'Uniform Range':
             batch_size = int(len(self.current_signal.Data_fft[0])/10) 
@@ -352,6 +353,7 @@ class MainWindow(QtWidgets.QMainWindow):
     def combobox_activated(self):
         # Get the selected item's text and display it in the label
         selected_index = self.modes_combobox.currentIndex()
+        self.selected_mode = self.modes_combobox.currentText()
         # store the mode in a global variable 
         self.set_slider_range()
         self.add_slider(selected_index)

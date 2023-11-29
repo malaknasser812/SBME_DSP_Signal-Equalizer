@@ -1,11 +1,7 @@
 from scipy.fft import fft
-import scipy.signal as sig
-from scipy import interpolate
-from scipy import signal
 import numpy as np
 import pandas as pd
 import time
-from scipy.interpolate import interp1d  
 from matplotlib.figure import Figure
 from PyQt5.QtWidgets import QSlider, QVBoxLayout, QGraphicsScene ,QLabel , QHBoxLayout ,QComboBox ,QGroupBox, QFileDialog
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg
@@ -13,6 +9,9 @@ import matplotlib.pyplot
 import matplotlib as plt
 import pyqtgraph as pg
 from PyQt5 import QtWidgets, QtCore, uic
+from PySide6.QtMultimedia import QMediaPlayer, QAudioOutput
+from PySide6.QtCore import QUrl, QTime
+from PySide6.QtGui import QIcon
 #from pydub import AudioSegment
 from PyQt5.Qt import Qt
 #import vlc
@@ -33,8 +32,6 @@ class CreateSlider:
         # Create a slider
         
         self.index= index
-        faro7a = MainWindow()
-        self.range = faro7a.get_maloka(index)
         self.slider = QSlider()
         #sets the orientation of the slider to be vertical.
         self.slider.setOrientation(QtCore.Qt.Orientation.Vertical)
@@ -123,11 +120,15 @@ class MainWindow(QtWidgets.QMainWindow):
         # self.audio_data = np.array([])
         # self.plot_audio()
         self.load_btn.clicked.connect(lambda: self.load())
+        self.hear_orig_btn.clicked.connect(lambda: self.play_audio(0))
+        self.hear_eq_btn.clicked.connect(lambda: self.play_audio(1))
         self.apply_btn.clicked.connect(lambda: self.apply_smoothing())
 
-    def get_maloka(self , index):
-        return self.dictnoary_values[index]
-        
+        self.player = QMediaPlayer()
+        self.audio = QAudioOutput()
+
+        self.player.setAudioOutput(self.audio)
+
 #OUR CODE HERE 
     def set_slider_range(self, selected_text):
         # if selected_text == 0:
@@ -166,29 +167,6 @@ class MainWindow(QtWidgets.QMainWindow):
                                 "Arithmia_3": [1000, 2000]
                                 }
             values_slider = [[0, 10, 1]]*len(list(self.dictnoary_values.keys()))
-    
-    # def open(self):
-    #         self.fname = QFileDialog.getOpenFileName(
-    #             None, "Select a file...", os.getenv('HOME'), filter="All files (*)")
-    #         path = self.fname[0]
-    #         if '.mp3' in path:
-    #             song = AudioSegment.from_mp3(path)
-    #             song.export(r"./final.wav", format="wav")
-    #             self.f_rate, self.yData = wavfile.read(r"./final.wav")
-    #         else:
-    #             self.f_rate, self.yData = wavfile.read(path)
-    #         if  len(self.yData.shape) > 1:
-    #             self.yData = self.yData[:,0]
-
-    #         self.yData = self.yData / 2.0**15
-    #         self.yAxisData = self.yData
-    #         self.SIZE = len(self.yAxisData)
-    #         self.xAxisData = np.linspace(
-    #             0, self.SIZE / self.f_rate, num=self.SIZE)
-    #         self.fourier()
-    #         self.p = vlc.MediaPlayer(path)
-    #         self.plot()
-    #         self.play()
     def load(self):
         path_info = QtWidgets.QFileDialog.getOpenFileName(
             None, "Select a signal...",os.getenv('HOME'), filter="Raw Data (*.csv *.wav *.mp3)")
@@ -197,6 +175,7 @@ class MainWindow(QtWidgets.QMainWindow):
         sample_rate = 0
         data = []
         signal_name = path.split('/')[-1].split('.')[0]
+        self.player.setSource(QUrl.fromLocalFile(signal_name))
         type = path.split('.')[-1]
         if type in ["wav", "mp3"]:
             data, sample_rate = librosa.load(path)
@@ -210,12 +189,12 @@ class MainWindow(QtWidgets.QMainWindow):
         self.current_signal = Signal(signal_name)
         self.current_signal.data = data
         self.current_signal.time = time
-        self.current_signal.sample_rate = sample_rate
+        self.current_signal.sample_rate = sample_rate 
         T = 1 / self.current_signal.sample_rate
         x_data, y_data = self.get_Fourier(T, len(self.current_signal.data))
         self.current_signal.Data_fft = [x_data, y_data]
         self.Range_spliting()
-        self.Plot()
+        self.Plot("original")
 
     def get_Fourier(self, T, N):
             freq_mag = np.linspace(0.0, 1.0/(2.0*T), N//2) 
@@ -237,9 +216,26 @@ class MainWindow(QtWidgets.QMainWindow):
             batch_size = int(len(self.current_signal.Data_fft[0])/10) 
             self.current_signal.Ranges = [(i*batch_size,(i+1)*batch_size)for i in range(10)]           
 
-    def Plot(self):
+            
+    def Plot(self, graph):
             signal= self.current_signal
             if signal:
+                #time domain 
+                graphs = [self.original_graph, self.equalized_graph]
+                graph = graphs[0] if graph == "original"  else graphs[1]
+                graph.clear()
+                graph.setLabel('left', "Amplitude")
+                graph.setLabel('bottom', "Time")
+                plot_item = graph.plot(
+                    signal.time, signal.data, name=f"{signal.name}")
+                # Add legend to the graph
+                if graph.plotItem.legend is not None:
+                    graph.plotItem.legend.clear()
+                legend = graph.addLegend()
+                legend.addItem(plot_item, name=f"{signal.name}")
+ 
+                #frequency domain
+
                 self.frequancy_graph.clear()
                 self.frequancy_graph.setLabel('left', "Amplitude(mv)")
                 self.frequancy_graph.setLabel('bottom', "Frequency(Hz)")
@@ -264,6 +260,39 @@ class MainWindow(QtWidgets.QMainWindow):
                 #     _, end_ind = signal.Ranges[-1]
                 #     v_line_end_uniform = pg.InfiniteLine(pos=signal.Data_fft[0][end_ind], angle=90, movable=False, pen=pg.mkPen('b', width=2))
                 #     self.frequancy_graph.addItem(v_line_end_uniform)
+                
+    def play_audio(self,index):
+        if index == 0: #hear original
+            if self.player.mediaStatus == QMediaPlayer.PlaybackState.PlayingState:
+                self.player.pause()
+            else:
+                self.player.play()
+
+
+    def smooth_and_plot(self, signal, smoothing_window):
+    # Apply the selected smoothing window to the data
+        window_parameters = None
+        if smoothing_window == "Gaussian":
+            sigma = float(self.lineEdit_2.text())
+            window_parameters = {"sigma": sigma}
+        smoothing_window_obj = SmoothingWindow(
+            smoothing_window, window_parameters)
+        smoothed_data = smoothing_window_obj.apply(signal.Amp_splits)
+
+        if smoothed_data is not None:
+            # Plot the smoothed data
+            x_values_smooth, y_values_smooth = [], []
+            for i in range(smoothed_data.shape[1]):
+                x_values_smooth.extend(signal.Freq_splits[:, i])
+                y_values_smooth.extend(smoothed_data[:, i])
+            plot_item_smooth = self.frequancy_graph.plot(
+                x_values_smooth, y_values_smooth, pen='r', name=f"{signal.name} (Smoothed)")
+            # Add legend for the smoothed plot
+            legend_smooth = self.frequancy_graph.addLegend()
+            legend_smooth.addItem(
+                plot_item_smooth, name=f"{signal.name} (Smoothed)")
+        else:
+            print("Error: Smoothing operation failed.")
         
     def apply_smoothing(self):
         if self.current_signal:

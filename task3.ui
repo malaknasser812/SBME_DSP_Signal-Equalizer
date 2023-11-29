@@ -63,7 +63,6 @@ background-color:#ffffff</string>
                <property name="font">
                 <font>
                  <pointsize>12</pointsize>
-                 <weight>75</weight>
                  <bold>true</bold>
                 </font>
                </property>
@@ -213,7 +212,6 @@ color:#34455e;
                <property name="font">
                 <font>
                  <pointsize>12</pointsize>
-                 <weight>75</weight>
                  <bold>true</bold>
                 </font>
                </property>
@@ -292,7 +290,6 @@ color:#34455e;
                <property name="font">
                 <font>
                  <pointsize>12</pointsize>
-                 <weight>75</weight>
                  <bold>true</bold>
                 </font>
                </property>
@@ -374,7 +371,6 @@ color:#34455e;
               <property name="font">
                <font>
                 <pointsize>10</pointsize>
-                <weight>75</weight>
                 <bold>true</bold>
                </font>
               </property>
@@ -395,7 +391,6 @@ color:#34455e;
               <property name="font">
                <font>
                 <pointsize>10</pointsize>
-                <weight>75</weight>
                 <bold>true</bold>
                </font>
               </property>
@@ -496,14 +491,14 @@ color:#34455e;
              </widget>
             </item>
             <item>
-             <widget class="QPushButton" name="pushButton">
+             <widget class="QPushButton" name="hear_orig_btn">
               <property name="text">
                <string>hear original</string>
               </property>
              </widget>
             </item>
             <item>
-             <widget class="QPushButton" name="pushButton_2">
+             <widget class="QPushButton" name="hear_eq_btn">
               <property name="text">
                <string>hear equalized</string>
               </property>
@@ -520,7 +515,6 @@ color:#34455e;
                 <property name="font">
                  <font>
                   <pointsize>10</pointsize>
-                  <weight>75</weight>
                   <bold>true</bold>
                  </font>
                 </property>
@@ -552,7 +546,6 @@ color:#34455e;
                 <property name="font">
                  <font>
                   <pointsize>10</pointsize>
-                  <weight>75</weight>
                   <bold>true</bold>
                  </font>
                 </property>
@@ -582,7 +575,6 @@ color:#34455e;
               <property name="font">
                <font>
                 <pointsize>10</pointsize>
-                <weight>75</weight>
                 <bold>true</bold>
                </font>
               </property>
@@ -632,7 +624,7 @@ color:#34455e;
      <x>0</x>
      <y>0</y>
      <width>1077</width>
-     <height>26</height>
+     <height>22</height>
     </rect>
    </property>
   </widget>

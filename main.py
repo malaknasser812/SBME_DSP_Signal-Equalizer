@@ -6,8 +6,9 @@ from matplotlib.figure import Figure
 from PyQt5.QtWidgets import QSlider, QVBoxLayout, QGraphicsScene ,QLabel , QHBoxLayout ,QComboBox ,QGroupBox, QFileDialog
 import matplotlib as plt
 import pyqtgraph as pg
-from PyQt5 import QtWidgets, QtCore, uic
+from PyQt5 import QtWidgets, QtCore, uic    
 from PyQt5.QtMultimedia import QMediaPlayer, QMediaContent
+from PyQt5.QtCore import QUrl, QTimer
 from PySide6.QtMultimedia import QMediaPlayer, QAudioOutput
 from PyQt5.Qt import Qt
 import os
@@ -105,21 +106,32 @@ class MainWindow(QtWidgets.QMainWindow):
         # self.audio_data = np.array([])
         # self.plot_audio()
         self.load_btn.clicked.connect(lambda: self.load())
-        self.hear_orig_btn.clicked.connect(self.playMusic )
+        self.hear_orig_btn.clicked.connect(self.playMusic)
         self.hear_eq_btn.clicked.connect(lambda: self.playMusic())
         self.apply_btn.clicked.connect(lambda: self.apply_smoothing())
+        self.play_pause_btn.clicked.connect(lambda: self.play_pause()) 
+        self.replay_btn.clicked.connect(lambda: self.playMusic())
+
+        
 
         self.player = QMediaPlayer(None,QMediaPlayer.StreamPlayback)
         self.player.setVolume(50)
         self.isPlaying = False
-        self.timer = QtCore.QTimer()
+        #self.timer = QtCore.QTimer()
+        
+        self.timer = QTimer(self)
         self.timer.setInterval(200)
-
-        # self.timer.timeout.connect(self.position_changed)
+        self.timer.timeout.connect(self.updatepos)
+       
+        self.line = pg.InfiniteLine(pos=0, angle=90, pen=None, movable=False)
 
         self.changed = True
+        self.line_position = 0
+        self.player.positionChanged.connect(self.updatepos)
 
-        self.line = pg.InfiniteLine(pos=0.1, angle=90, pen=None, movable=False)
+
+        
+
         
     
         
@@ -265,13 +277,37 @@ class MainWindow(QtWidgets.QMainWindow):
                 #     self.frequancy_graph.addItem(v_line_end_uniform)
 
     def playMusic(self):
+        self.changed =  True
         media = QMediaContent(QUrl.fromLocalFile(self.audio_data))
         self.player.setMedia(media)
         self.player.play()
+        self.original_graph.addItem (self.line)
+        self.timer.start()
+        
 
-    def Pause(self):
-        self.player.pause()
-        self.timer.stop()
+    def updatepos(self):
+       # Get the current position in milliseconds
+        position = self.player.position()/1000
+
+        # Update the line position based on the current position
+        self.line_position = position 
+
+        max_x = self.original_graph.getViewBox().viewRange()[0][1]
+        if self.line_position > max_x:
+            self.line_position = max_x
+
+        self.line.setPos(self.line_position)
+
+    def play_pause(self):
+        if self.changed:
+            self.player.pause()
+            self.timer.stop()
+            self.changed = not self.changed
+        else:
+            self.player.play()
+            self.timer.start()
+            self.changed = not self.changed
+
 
     # def position_changed(self): 
     #     current_time = self.player.get_time()

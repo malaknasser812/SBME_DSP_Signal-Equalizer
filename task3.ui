@@ -321,7 +321,7 @@ color:#34455e;
               </widget>
              </item>
              <item>
-              <widget class="QCheckBox" name="checkBox_2">
+              <widget class="QCheckBox" name="checkBox">
                <property name="font">
                 <font>
                  <pointsize>10</pointsize>

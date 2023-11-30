@@ -115,7 +115,8 @@ class EqualizerApp(QtWidgets.QMainWindow):
         self.apply_btn.clicked.connect(lambda: self.apply_smoothing())
         self.play_pause_btn.clicked.connect(lambda: self.play_pause()) 
         self.replay_btn.clicked.connect(lambda: self.playMusic())
-
+        self.speed_up_btn.clicked.connect(lambda: self.speed_up()) 
+        self.speed_down_btn.clicked.connect(lambda: self.speed_down())  
         
 
         self.player = QMediaPlayer(None,QMediaPlayer.StreamPlayback)
@@ -136,6 +137,7 @@ class EqualizerApp(QtWidgets.QMainWindow):
         self.changed = True
         self.line_position = 0
         self.player.positionChanged.connect(self.updatepos)
+        self.current_speed = 1
 
 
         
@@ -351,6 +353,21 @@ class EqualizerApp(QtWidgets.QMainWindow):
 
         self.line.setPos(self.line_position)
         #print (self.line.getPos()[0], self.player.position())
+
+    def speed_up(self):
+        # Increase the playback speed
+       
+        self.current_speed = self.current_speed + 0.1  # You can adjust the increment as needed
+        self.player.setPlaybackRate(self.current_speed)
+        #print(self.current_speed)
+
+    def speed_down(self):
+        # Decrease the playback speed
+        self.current_speed = self.current_speed - 0.1  # You can adjust the increment as needed
+        new_speed = max(0.1, self.current_speed - 0.1)  # Ensure speed doesn't go below 0.1
+        self.player.setPlaybackRate(new_speed)
+        #print(new_speed)
+
     
 
     def play_pause(self):

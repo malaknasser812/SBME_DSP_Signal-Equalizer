@@ -137,10 +137,17 @@ color:#34455e;
              </item>
             </layout>
            </item>
-           <item row="3" column="0">
-            <widget class="QLineEdit" name="lineEdit_2">
-             <property name="placeholderText">
-              <string>Enter Std Value</string>
+           <item row="5" column="0">
+            <widget class="QLabel" name="label_9">
+             <property name="font">
+              <font>
+               <pointsize>12</pointsize>
+               <weight>75</weight>
+               <bold>true</bold>
+              </font>
+             </property>
+             <property name="text">
+              <string>Spectrogram :</string>
              </property>
             </widget>
            </item>

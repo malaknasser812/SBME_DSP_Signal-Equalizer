@@ -181,7 +181,7 @@ color:#34455e;
                 </font>
                </property>
                <property name="text">
-                <string>Load</string>
+                <string>Browse</string>
                </property>
               </widget>
              </item>
@@ -217,7 +217,7 @@ color:#34455e;
 }</string>
                </property>
                <property name="text">
-                <string>Browse</string>
+                <string>Load</string>
                </property>
               </widget>
              </item>

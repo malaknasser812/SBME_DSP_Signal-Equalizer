@@ -283,14 +283,24 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # Convert input samples to float32
         data = samples.astype('float32')
+        # Size of the Fast Fourier Transform (FFT), which will also be used as the window length
+        n_fft=1024
+        # Step or stride between windows. If the step is smaller than the window length, the windows will overlap
+        hop_length=320
+        # Specify the window type for FFT/STFT
+        window_type ='hann'
 
         # Compute the short-time Fourier transform magnitude squared
-        frequency_magnitude = np.abs(librosa.stft(data))**2
+        # it calculates the spectrograme for the givven data but the scale of the y axix is not good
+        # it gives you a totally dark img so after that we convert it to the mel scale 
+        frequency_magnitude = np.abs(librosa.stft(data, n_fft=n_fft, hop_length=hop_length, win_length=n_fft, window=window_type)) ** 2
 
         # Compute the mel spectrogram
-        mel_spectrogram = librosa.feature.melspectrogram(S=frequency_magnitude, y=data, sr=sampling_rate, n_mels=128)
-
+        mel_spectrogram = librosa.feature.melspectrogram(S=frequency_magnitude, y=data, sr=sampling_rate, n_fft=n_fft,
+                    hop_length=hop_length, win_length=n_fft, window=window_type, n_mels =128)
+        #because of mel scale is not redable we must calculate the db scale 
         # Convert power spectrogram to decibels
+        #it is the log mel spectrogram
         decibel_spectrogram = librosa.power_to_db(mel_spectrogram, ref=np.max)
 
         # Create ImageItem for displaying the spectrogram

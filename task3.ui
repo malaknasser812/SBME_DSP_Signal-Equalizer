@@ -181,7 +181,7 @@ color:#34455e;
                 </font>
                </property>
                <property name="text">
-                <string>Load</string>
+                <string>Browse</string>
                </property>
               </widget>
              </item>
@@ -217,7 +217,7 @@ color:#34455e;
 }</string>
                </property>
                <property name="text">
-                <string>Browse</string>
+                <string>Load</string>
                </property>
               </widget>
              </item>
@@ -624,5 +624,22 @@ color:#34455e;
   </customwidget>
  </customwidgets>
  <resources/>
- <connections/>
+ <connections>
+  <connection>
+   <sender>lineEdit_2</sender>
+   <signal>returnPressed()</signal>
+   <receiver>apply_btn</receiver>
+   <slot>click()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>107</x>
+     <y>818</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>108</x>
+     <y>836</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
 </ui>

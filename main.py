@@ -1,6 +1,7 @@
 from scipy.fft import fft
 import numpy as np
 import pandas as pd
+import copy
 from PyQt5.QtWidgets import QSlider,QHBoxLayout 
 import matplotlib as plt
 import pyqtgraph as pg
@@ -30,6 +31,7 @@ class Signal:
         self.sample_rate = None
         self.freq_data = None
         self.Ranges = []
+        self.phase = None
 
 class SmoothingWindow:
     def __init__(self, window_type, amp,sigma=None):
@@ -103,6 +105,8 @@ class EqualizerApp(QtWidgets.QMainWindow):
         self.current_speed = 1
         self.slider_gain = {}
         self.equalized_bool = False
+        self.time_eq_signal = Signal('timeeq')
+        
 
         self.line = pg.InfiniteLine(pos=0.1, angle=90, pen=None, movable=False)
         # spectooooooo
@@ -223,6 +227,7 @@ class EqualizerApp(QtWidgets.QMainWindow):
         Freq= np.fft.fftfreq(N, T)[:N//2]
         # Extracting positive frequencies and scaling the amplitude
         Amp = (2/N)*(np.abs(freq_amp[:N//2]))
+        self.current_signal.phase = np.angle(Amp[:N//2])
         return Freq, Amp
 
     def Range_spliting(self):
@@ -467,24 +472,35 @@ class EqualizerApp(QtWidgets.QMainWindow):
         #self.Plot('equalized')
 
     def equalized(self, slider_index,value):
-        print (value)
+        #print (value)
         self.equalized_bool = True
-        self.eqsignal = self.current_signal
-        #print(self.current_signal.Ranges)
-        for i in range(self.current_signal.Ranges[slider_index][0],self.current_signal.Ranges[slider_index][1]):          
+        self.eqsignal = copy.deepcopy(self.current_signal) 
+        
+        for i in range(self.current_signal.Ranges[slider_index][0],self.current_signal.Ranges[slider_index][1]):  
+            #print('before',self.current_signal.freq_data[1][i])        
             self.eqsignal.freq_data[1][i] = self.current_signal.freq_data[1][i] * value
-        #print(self.eqsignal.freq_data[1][i])
-        self.plot_freq_smoothing_window()
+            # self.eqsignal = self.current_signal.freq_data[1][i] * value
 
+            #print('after',self.eqsignal.freq_data[1][i], self.current_signal.freq_data[1][i])
+        
+        
+        self.plot_freq_smoothing_window()
+        self.time_eq_signal.time = self.current_signal.time
+        self.time_eq_signal = self.recovered_signal(self.eqsignal.data, self.current_signal.phase)
         
 
-    def recovered_signal(Amp, phase):
+    def recovered_signal(self,Amp, phase):
         # complex array from amp and phase comination
+        # Amp = Amp.reshape((len(Amp), 1))  # Reshape Amp to have a second dimension
+        #phase = phase.T
+        print(phase)
         complex_value = Amp * np.exp(1j*phase)
         # taking inverse fft to get recover signal
         recovered_signal = np.fft.ifft(complex_value)
         # taking only the real part of the signal
         return np.real(recovered_signal)
+
+    
     
     def hide(self):
         if (self.checkBox.isChecked()):

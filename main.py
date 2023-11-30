@@ -40,6 +40,9 @@ class SmoothingWindow:
         if self.window_type == "Rectangular":
             window = sg.windows.boxcar(len(signal))
             smoothed_signal = self.amp * window 
+            smoothed_signal = self.amp * window
+            #print("smoothed_signal")
+            #print(smoothed_signal)
             return smoothed_signal
         elif self.window_type == "Hamming":
             window = sg.windows.hamming(len(signal))
@@ -98,6 +101,8 @@ class EqualizerApp(QtWidgets.QMainWindow):
         self.line_position = 0
         self.player.positionChanged.connect(self.updatepos)
         self.current_speed = 1
+        self.slider_gain = {}
+        self.equalized_bool = False
 
         self.line = pg.InfiniteLine(pos=0.1, angle=90, pen=None, movable=False)
         # spectooooooo
@@ -224,10 +229,12 @@ class EqualizerApp(QtWidgets.QMainWindow):
         dictnoary_values = self.dict_ranges()
         print (self.modes_combobox.currentText())
         if self.modes_combobox.currentText() == 'Uniform Range':
-            print("hhhhhhhhhhhhhhh")
+            #print("hhhhhhhhhhhhhhh")
             # Divide the frequency range into 10 equal parts for the 'Uniform Range' mode
+            #print("hhhhhhhhhhhhhhh")
             batch_size = int(len(self.current_signal.freq_data[0])/10) 
             self.current_signal.Ranges = [(i*batch_size,(i+1)*batch_size) for i in range(10)] 
+            print (self.current_signal.Ranges)
         else :
             freq= self.current_signal.freq_data[0] #index zero for mag of freq
             print(dictnoary_values.items())
@@ -257,10 +264,12 @@ class EqualizerApp(QtWidgets.QMainWindow):
                 legend.addItem(plot_item, name=f"{signal.name}")
 
     def plot_freq_smoothing_window (self):
-        signal= self.current_signal
+        signal = self.eqsignal if self.equalized_bool  else self.current_signal
+       
         if signal and signal.Ranges:  # Check if signal is not None and signal.Ranges is not empty
             start_last_ind, end_last_ind = signal.Ranges[-1]
-            print("helloooo")
+            #print("helloooo")
+            #frequency domain
             self.frequancy_graph.clear()
             # Plot the original frequency data in white
             self.frequancy_graph.plot(signal.freq_data[0],
@@ -435,6 +444,8 @@ class EqualizerApp(QtWidgets.QMainWindow):
                 slider_creator = CreateSlider(i)
                 #print(slider_creator.range)
                 slider = slider_creator.get_slider()
+                self.slider_gain[i] = 10
+                slider.valueChanged.connect(lambda value, i=i: self.update_slider_value(i, value/10))
                 self.frame_layout.addWidget(slider) 
                 self.sliders_list.append(slider) 
         else:
@@ -442,9 +453,30 @@ class EqualizerApp(QtWidgets.QMainWindow):
             for i in range(4): # either musical, animal or ecg
                 slider_creator = CreateSlider(i)
                 slider = slider_creator.get_slider()
+                # self.slider_gain = {i:1}
                 self.frame_layout.addWidget(slider)
                 self.sliders_list.append(slider) 
-        print(self.sliders_list[0].value())
+        #print(self.sliders_list[0].value())
+        #print (self.slider_gain)
+
+    def update_slider_value(self, slider_index, value):
+        # This method will be called whenever a slider is moved
+        self.slider_gain[slider_index] = value
+        #print (self.slider_gain)
+        self.equalized(slider_index, value)
+        #self.Plot('equalized')
+
+    def equalized(self, slider_index,value):
+        print (value)
+        self.equalized_bool = True
+        self.eqsignal = self.current_signal
+        #print(self.current_signal.Ranges)
+        for i in range(self.current_signal.Ranges[slider_index][0],self.current_signal.Ranges[slider_index][1]):          
+            self.eqsignal.freq_data[1][i] = self.current_signal.freq_data[1][i] * value
+        #print(self.eqsignal.freq_data[1][i])
+        self.plot_freq_smoothing_window()
+
+        
 
     def recovered_signal(Amp, phase):
         # complex array from amp and phase comination

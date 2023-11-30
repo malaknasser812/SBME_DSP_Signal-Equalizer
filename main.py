@@ -1,5 +1,6 @@
 from scipy.fft import fft
 import numpy as np
+from scipy.io import wavfile
 import pandas as pd
 import time
 from matplotlib.figure import Figure
@@ -123,7 +124,11 @@ class EqualizerApp(QtWidgets.QMainWindow):
         #self.timer = QtCore.QTimer()
         
         self.timer = QTimer(self)
-        self.timer.setInterval(200)
+        self.timer = QtCore.QTimer(self)
+        self.elapsed_timer = QtCore.QElapsedTimer()
+        self.timer.timeout.connect(self.updatepos)
+
+        self.timer.setInterval(50)
         self.timer.timeout.connect(self.updatepos)
        
         self.line = pg.InfiniteLine(pos=0, angle=90, pen=None, movable=False)
@@ -326,6 +331,7 @@ class EqualizerApp(QtWidgets.QMainWindow):
     def playMusic(self):
         self.changed =  True
         media = QMediaContent(QUrl.fromLocalFile(self.audio_data))
+        #self.sampling_freq, _ = wavfile.read(self.audio_data)
         self.player.setMedia(media)
         self.player.play()
         self.original_graph.addItem (self.line)
@@ -337,13 +343,15 @@ class EqualizerApp(QtWidgets.QMainWindow):
         position = self.player.position()/1000
 
         # Update the line position based on the current position
-        self.line_position = position 
+        self.line_position = position
 
         max_x = self.original_graph.getViewBox().viewRange()[0][1]
         if self.line_position > max_x:
-            self.line_position = max_x
+            self.line_position = max_x -0.052
 
         self.line.setPos(self.line_position)
+        #print (self.line.getPos()[0], self.player.position())
+    
 
     def play_pause(self):
         if self.changed:

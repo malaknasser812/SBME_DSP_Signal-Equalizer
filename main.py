@@ -36,7 +36,8 @@ class CreateSlider:
         self.slider.setSingleStep(1)
         self.slider.setMinimum(0)
         self.slider.setMaximum(20)
-
+        self.slider.setValue(10)
+        # self.sliderlabel.setText()
     def get_slider(self):
         return self.slider
 
@@ -89,9 +90,9 @@ class SmoothingWindow:
         smoothed_signal = signal * window
         return smoothed_signal
 
-class MainWindow(QtWidgets.QMainWindow):    
+class EqualizerApp(QtWidgets.QMainWindow):    
     def __init__(self, *args, **kwargs):
-        super(MainWindow, self).__init__(*args, **kwargs)
+        super(EqualizerApp, self).__init__(*args, **kwargs)
         # Load the UI Page
         uic.loadUi(r'task3.ui', self)
         # self.dictnoary_values = {}
@@ -144,6 +145,7 @@ class MainWindow(QtWidgets.QMainWindow):
             'before': self.spectrogram_before,
             'after': self.spectrogram_after
         }
+        self.sliders_list =[]
         
     
         
@@ -425,17 +427,19 @@ class MainWindow(QtWidgets.QMainWindow):
         if selected_index == 0: #uniform range
             self.clear_layout(self.frame_layout)
             for i in range(10):
-
                 slider_creator = CreateSlider(i)
                 #print(slider_creator.range)
                 slider = slider_creator.get_slider()
-                self.frame_layout.addWidget(slider)  
+                self.frame_layout.addWidget(slider) 
+                self.sliders_list.append(slider) 
         else:
             self.clear_layout(self.frame_layout) 
             for i in range(4): # either musical, animal or ecg
                 slider_creator = CreateSlider(i)
                 slider = slider_creator.get_slider()
                 self.frame_layout.addWidget(slider)
+                self.sliders_list.append(slider) 
+        print(self.sliders_list[0].value())
 
     def recovered_signal(Amp, phase):
         # complex array from amp and phase comination
@@ -447,7 +451,7 @@ class MainWindow(QtWidgets.QMainWindow):
     
 def main():
     app = QtWidgets.QApplication(sys.argv)
-    main = MainWindow()
+    main = EqualizerApp()
     main.show()
     sys.exit(app.exec_())
 

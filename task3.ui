@@ -113,70 +113,16 @@ background-color:#ffffff</string>
             </layout>
            </item>
            <item row="5" column="0">
-            <spacer name="verticalSpacer_6">
-             <property name="orientation">
-              <enum>Qt::Vertical</enum>
-             </property>
-             <property name="sizeHint" stdset="0">
-              <size>
-               <width>20</width>
-               <height>40</height>
-              </size>
-             </property>
-            </spacer>
-           </item>
-           <item row="3" column="0">
-            <widget class="QLineEdit" name="lineEdit_2">
-             <property name="minimumSize">
-              <size>
-               <width>0</width>
-               <height>40</height>
-              </size>
-             </property>
-             <property name="maximumSize">
-              <size>
-               <width>16777215</width>
-               <height>40</height>
-              </size>
-             </property>
-             <property name="placeholderText">
-              <string>Enter std</string>
-             </property>
-            </widget>
-           </item>
-           <item row="4" column="0">
-            <widget class="QPushButton" name="apply_btn">
-             <property name="minimumSize">
-              <size>
-               <width>0</width>
-               <height>40</height>
-              </size>
-             </property>
-             <property name="maximumSize">
-              <size>
-               <width>16777215</width>
-               <height>40</height>
-              </size>
-             </property>
-             <property name="styleSheet">
-              <string notr="true">
-QPushButton {
-background :#34455e;
-border-radius: 10px;
-color: white;
-}
-
-QPushButton:hover {
-    background-color: white;
-    border: 2px solid #475c7a; 
-    cursor: pointer; 
-
-border-radius: 10px ; 
-color:#34455e;
-}</string>
+            <widget class="QLabel" name="label_9">
+             <property name="font">
+              <font>
+               <pointsize>12</pointsize>
+               <weight>75</weight>
+               <bold>true</bold>
+              </font>
              </property>
              <property name="text">
-              <string>Apply</string>
+              <string>Spectrogram :</string>
              </property>
             </widget>
            </item>
@@ -533,7 +479,7 @@ color:#34455e;
              </layout>
             </item>
             <item>
-             <widget class="PlotWidget" name="original_spectrogram_graph" native="true"/>
+             <widget class="PlotWidget" name="spectrogram_before" native="true"/>
             </item>
            </layout>
           </item>
@@ -564,7 +510,7 @@ color:#34455e;
              </layout>
             </item>
             <item>
-             <widget class="PlotWidget" name="equalized_spectogram_graph" native="true"/>
+             <widget class="PlotWidget" name="spectrogram_after" native="true"/>
             </item>
            </layout>
           </item>

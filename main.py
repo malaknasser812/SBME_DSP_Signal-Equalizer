@@ -7,6 +7,8 @@ from PyQt5.QtWidgets import QSlider, QVBoxLayout, QGraphicsScene ,QLabel , QHBox
 import matplotlib as plt
 import pyqtgraph as pg
 from PyQt5 import QtWidgets, QtCore, uic    
+from pyqtgraph import ImageItem
+from PyQt5 import QtWidgets, QtCore, uic
 from PyQt5.QtMultimedia import QMediaPlayer, QMediaContent
 from PyQt5.QtCore import QUrl, QTimer
 from PySide6.QtMultimedia import QMediaPlayer, QAudioOutput
@@ -132,6 +134,16 @@ class MainWindow(QtWidgets.QMainWindow):
 
         
 
+        self.line = pg.InfiniteLine(pos=0.1, angle=90, pen=None, movable=False)
+
+        # spectooooooo
+        self.available_palettes = ['twilight', 'Blues', 'Greys', 'ocean', 'nipy_spectral']
+        self.current_color_palette = self.available_palettes[0]
+
+        self.spectrogram_widget = {
+            'before': self.spectrogram_before,
+            'after': self.spectrogram_after
+        }
         
     
         
@@ -217,6 +229,7 @@ class MainWindow(QtWidgets.QMainWindow):
         # self.set_slider_range()
         self.Range_spliting()
         self.Plot("original")
+        self.plot_spectrogram(data, sample_rate, 'before')
 
     def get_Fourier(self, T, data):
             freq_amp= np.fft.rfft(data)
@@ -275,6 +288,38 @@ class MainWindow(QtWidgets.QMainWindow):
                 #     _, end_ind = signal.Ranges[-1]
                 #     v_line_end_uniform = pg.InfiniteLine(pos=signal.freq_data[0][end_ind], angle=90, movable=False, pen=pg.mkPen('b', width=2))
                 #     self.frequancy_graph.addItem(v_line_end_uniform)
+    def plot_spectrogram(self, samples, sampling_rate, widget):
+        # Clear the previous content of the spectrogram widget
+        self.spectrogram_widget[widget].clear()
+
+        # Add a subplot to the spectrogram widget
+        spectrogram_axes = self.spectrogram_widget[widget].getPlotItem()
+
+        # Convert input samples to float32
+        data = samples.astype('float32')
+
+        # Compute the short-time Fourier transform magnitude squared
+        frequency_magnitude = np.abs(librosa.stft(data))**2
+
+        # Compute the mel spectrogram
+        mel_spectrogram = librosa.feature.melspectrogram(S=frequency_magnitude, y=data, sr=sampling_rate, n_mels=128)
+
+        # Convert power spectrogram to decibels
+        decibel_spectrogram = librosa.power_to_db(mel_spectrogram, ref=np.max)
+
+        # Create ImageItem for displaying the spectrogram
+        spectrogram_image = ImageItem(image=decibel_spectrogram)
+
+        # Add ImageItem to the spectrogram widget
+        self.spectrogram_widget[widget].addItem(spectrogram_image)
+
+        # Add colorbar to the spectrogram plot (if needed)
+        # self.spectrogram_widget[widget].getFigure().colorbar(spectrogram_image, ax=spectrogram_axes, format='%+2.0f dB')
+
+        # Redraw the spectrogram widget
+        self.spectrogram_widget[widget].draw()
+
+        
 
     def playMusic(self):
         self.changed =  True

@@ -21,7 +21,7 @@ import bisect
 import pyqtgraph as pg
 from PyQt5.QtMultimedia import QMediaPlayer, QMediaContent
 from PyQt5.QtCore import QUrl
-
+from scipy import signal as sg
 
 
 class CreateSlider:
@@ -51,44 +51,34 @@ class Signal:
         self.Ranges = []
 
 class SmoothingWindow:
-    def __init__(self, window_type, parameters=None):
+    def __init__(self, window_type, amp,sigma=None):
         self.window_type = window_type
-        self.parameters = parameters
-
+        self.sigma = sigma
+        self.amp = amp
     def apply(self, signal):
-        if self.window_type == "Rectangle":
-            return self.apply_rectangle(signal)
+        if self.window_type == "Rectangular":
+            window = sg.windows.boxcar(len(signal))
+            smoothed_signal = self.amp * window
+            print("smoothed_signal")
+            print(smoothed_signal)
+            return smoothed_signal
         elif self.window_type == "Hamming":
-            return self.apply_hamming(signal)
+            window = sg.windows.hamming(len(signal))
+            smoothed_signal = self.amp * window
+            return smoothed_signal
         elif self.window_type == "Hanning":
-            return self.apply_hanning(signal)
+            window = sg.windows.hann(len(signal))
+            smoothed_signal = self.amp * window
+            return smoothed_signal
         elif self.window_type == "Gaussian":
-            if self.parameters is not None:
-                return self.apply_gaussian(signal, self.parameters)
+            if self.sigma is not None:
+            # Apply the Gaussian window to the signal with a specified standard deviation (sigma)
+                window = sg.windows.gaussian(len(signal),self.sigma)
+                smoothed_signal = self.amp * window
+                return smoothed_signal
             else:
                 raise ValueError("Gaussian window requires parameters.")
 
-    def apply_rectangle(self, signal):
-        # Rectangle window does not modify the signal
-        return signal
-
-    def apply_hamming(self, signal):
-        # Apply the Hamming window to the signal
-        window = np.hamming(len(signal))
-        smoothed_signal = signal * window
-        return smoothed_signal
-
-    def apply_hanning(self, signal):
-        # Apply the Hanning window to the signal
-        window = np.hanning(len(signal))
-        smoothed_signal = signal * window
-        return smoothed_signal
-
-    def apply_gaussian(self, signal, sigma):
-        # Apply the Gaussian window to the signal with a specified standard deviation (sigma)
-        window = np.exp(-(np.arange(len(signal)) ** 2) / (2 * sigma ** 2))
-        smoothed_signal = signal * window
-        return smoothed_signal
 
 class EqualizerApp(QtWidgets.QMainWindow):    
     def __init__(self, *args, **kwargs):
@@ -99,56 +89,36 @@ class EqualizerApp(QtWidgets.QMainWindow):
         self.selected_mode = 'Uniform Range'
         self.selected_window = None
         self.frame_layout = QHBoxLayout(self.sliders_frame)
-        # Connect the signal to set_combobox
-        self.modes_combobox
         # Connect the activated signal to a custom slot
         self.modes_combobox.activated.connect(lambda: self.combobox_activated())
         self.smoothing_window_combobox.activated.connect(lambda: self.smoothing_window_combobox_activated())
         self.lineEdit_2.setVisible(False)  # Initially hide the line edit for Gaussian window
         self.current_signal=None
-        # self.audio_data = np.array([])
-        # self.plot_audio()
         self.load_btn.clicked.connect(lambda: self.load())
         self.hear_orig_btn.clicked.connect(self.playMusic)
         self.hear_eq_btn.clicked.connect(lambda: self.playMusic())
-        self.apply_btn.clicked.connect(lambda: self.apply_smoothing())
+        self.apply_btn.clicked.connect(lambda: self.plot_freq_smoothing_window())
         self.play_pause_btn.clicked.connect(lambda: self.play_pause()) 
         self.replay_btn.clicked.connect(lambda: self.playMusic())
-
-        
-
         self.player = QMediaPlayer(None,QMediaPlayer.StreamPlayback)
         self.player.setVolume(50)
-        self.isPlaying = False
-        #self.timer = QtCore.QTimer()
-        
+        #self.timer = QtCore.QTimer() 
         self.timer = QTimer(self)
         self.timer.setInterval(200)
         self.timer.timeout.connect(self.updatepos)
-       
         self.line = pg.InfiniteLine(pos=0, angle=90, pen=None, movable=False)
-
         self.changed = True
         self.line_position = 0
         self.player.positionChanged.connect(self.updatepos)
-
-
-        
-
         self.line = pg.InfiniteLine(pos=0.1, angle=90, pen=None, movable=False)
-
         # spectooooooo
         self.available_palettes = ['twilight', 'Blues', 'Greys', 'ocean', 'nipy_spectral']
         self.current_color_palette = self.available_palettes[0]
-
         self.spectrogram_widget = {
             'before': self.spectrogram_before,
             'after': self.spectrogram_after
         }
         self.sliders_list =[]
-        
-    
-        
 
 #OUR CODE HERE 
     def dict_ranges(self):
@@ -229,20 +199,28 @@ class EqualizerApp(QtWidgets.QMainWindow):
         x_data, y_data = self.get_Fourier(T, self.current_signal.data)
         self.current_signal.freq_data = [x_data, y_data]
         # self.set_slider_range()
-        self.Range_spliting()
         self.Plot("original")
         self.plot_spectrogram(data, sample_rate, 'before')
+        self.Range_spliting()
+        self.plot_freq_smoothing_window()
 
     def get_Fourier(self, T, data):
-            freq_amp= np.fft.rfft(data)
-            Amp = np.abs(freq_amp)
-            Freq= np.fft.rfftfreq(len(data), T)  
-            return Freq, Amp
+        N=len(data)
+        freq_amp= np.fft.fft(data)
+        # Calculate the corresponding frequencies
+        Freq= np.fft.fftfreq(N, T)[:N//2]
+        # Extracting positive frequencies and scaling the amplitude
+        Amp = (2/N)*(np.abs(freq_amp[:N//2]))
+        return Freq, Amp
 
     def Range_spliting(self):
         dictnoary_values = self.dict_ranges()
         print (self.modes_combobox.currentText())
-        if self.modes_combobox.currentText() == 'Animal Sounds' or 'Music Instrument' or 'ECG Abnormalities':
+        if self.modes_combobox.currentText() == 'Uniform Range':
+            print("hhhhhhhhhhhhhhh")
+            batch_size = int(len(self.current_signal.freq_data[0])/10) 
+            self.current_signal.Ranges = [(i*batch_size,(i+1)*batch_size) for i in range(10)] 
+        else :
             freq= self.current_signal.freq_data[0] #index zero for mag of freq
             print(dictnoary_values.items())
             for _,(start,end) in dictnoary_values.items():
@@ -251,9 +229,6 @@ class EqualizerApp(QtWidgets.QMainWindow):
                 self.current_signal.Ranges.append((start_ind, end_ind))
                 print(self.current_signal.Ranges)
 
-        elif self.modes_combobox.currentText() == 'Uniform Range':
-            batch_size = int(len(self.current_signal.Data_fft[0])/10) 
-            self.current_signal.Ranges = [(i*batch_size,(i+1)*batch_size)for i in range(10)] 
 
     def Plot(self, graph):
             signal= self.current_signal
@@ -271,57 +246,77 @@ class EqualizerApp(QtWidgets.QMainWindow):
                     graph.plotItem.legend.clear()
                 legend = graph.addLegend()
                 legend.addItem(plot_item, name=f"{signal.name}")
+                # self.plot_freq_smoothing_window()
 
-                #frequency domain
-                self.frequancy_graph.clear()
-                self.frequancy_graph.setLabel('left', "Amplitude(mv)")
-                self.frequancy_graph.setLabel('bottom', "Frequency(Hz)")
-                plot_item = self.frequancy_graph.plot(
-                    signal.freq_data[0],signal.freq_data[1], name=f"{signal.name}")
-                # Add vertical lines for start and end indices for each mode
-                for start_ind, end_ind in signal.Ranges:
-                    v_line_start = pg.InfiniteLine(pos=signal.freq_data[0][start_ind], angle=90, movable=False, pen=pg.mkPen('r', width=2))
-                    v_line_end = pg.InfiniteLine(pos=signal.freq_data[0][end_ind], angle=90, movable=False, pen=pg.mkPen('r', width=2))
-                    
+    def plot_freq_smoothing_window (self):
+        signal= self.current_signal
+        if signal and signal.Ranges:  # Check if signal is not None and signal.Ranges is not empty
+            start_last_ind, end_last_ind = signal.Ranges[-1]
+            print("helloooo")
+            #frequency domain
+            self.frequancy_graph.clear()
+            self.frequancy_graph.plot(signal.freq_data[0],
+                    signal.freq_data[1],pen={'color': 'w'})
+            for i in range(len(signal.Ranges)):
+                if i!= len(signal.Ranges)-1 :
+                    start_ind,end_ind = signal.Ranges[i]
+                    v_line_pos = signal.freq_data[0][start_ind]
+                    windowtype = self.smoothing_window_combobox.currentText()
+                    sigma_text = self.lineEdit_2.text()
+                    if sigma_text:
+                        sigma = int(sigma_text)
+                    else:
+                        sigma = 20  # Set a default value if the text is empty
+                    amp = max(signal.freq_data[1][start_ind:end_ind])
+                    smooth_window = SmoothingWindow(windowtype,amp,sigma)
+                    curr_smooth_window = smooth_window.apply(signal.freq_data[1][start_ind:end_ind])
+                    # print(len(signal.freq_data[0][start_ind:end_ind]))
+                    # print( len(curr_smooth_window))
+
+                    self.frequancy_graph.plot(signal.freq_data[0][start_ind:end_ind],
+                            curr_smooth_window,pen={'color': 'r', 'width': 2})
+                else:
+                    v_line_pos = signal.freq_data[0][end_last_ind-1]
+                    v_line_pos_start = signal.freq_data[0][start_last_ind]
+                    windowtype = self.smoothing_window_combobox.currentText()
+                    sigma_text = self.lineEdit_2.text()
+                    if sigma_text:
+                        sigma = int(sigma_text)
+                    else:
+                        sigma = 20  # Set a default value if the text is empty
+                    amp = max(signal.freq_data[1][start_ind:end_ind])
+                    smooth_window = SmoothingWindow(windowtype,amp,sigma)     
+                    curr_smooth_window = smooth_window.apply(signal.freq_data[1][start_ind:end_ind])
+                    # print( len(signal.freq_data[0][start_ind:end_ind]))
+                    # print(len(curr_smooth_window))
+                    self.frequancy_graph.plot(signal.freq_data[0][start_last_ind:end_last_ind],
+                            curr_smooth_window,pen={'color': 'r', 'width': 2})
+                    v_line_start = pg.InfiniteLine(pos=v_line_pos_start, angle=90, movable=False, pen=pg.mkPen('r', width=2))
                     self.frequancy_graph.addItem(v_line_start)
-                    self.frequancy_graph.addItem(v_line_end)
-                # # Add vertical line at the end for 'Uniform Range'
-                # if self.modes_combobox.currentIndex() == 'Uniform Range' and signal.Ranges:
-                #     _, end_ind = signal.Ranges[-1]
-                #     v_line_end_uniform = pg.InfiniteLine(pos=signal.freq_data[0][end_ind], angle=90, movable=False, pen=pg.mkPen('b', width=2))
-                #     self.frequancy_graph.addItem(v_line_end_uniform)
+                v_line = pg.InfiniteLine(pos=v_line_pos, angle=90, movable=False, pen=pg.mkPen('r', width=2))
+                self.frequancy_graph.addItem(v_line)
+
     def plot_spectrogram(self, samples, sampling_rate, widget):
         # Clear the previous content of the spectrogram widget
         self.spectrogram_widget[widget].clear()
-
         # Add a subplot to the spectrogram widget
         spectrogram_axes = self.spectrogram_widget[widget].getPlotItem()
-
         # Convert input samples to float32
         data = samples.astype('float32')
-
         # Compute the short-time Fourier transform magnitude squared
         frequency_magnitude = np.abs(librosa.stft(data))**2
-
         # Compute the mel spectrogram
         mel_spectrogram = librosa.feature.melspectrogram(S=frequency_magnitude, y=data, sr=sampling_rate, n_mels=128)
-
         # Convert power spectrogram to decibels
         decibel_spectrogram = librosa.power_to_db(mel_spectrogram, ref=np.max)
-
         # Create ImageItem for displaying the spectrogram
         spectrogram_image = ImageItem(image=decibel_spectrogram)
-
         # Add ImageItem to the spectrogram widget
         self.spectrogram_widget[widget].addItem(spectrogram_image)
-
         # Add colorbar to the spectrogram plot (if needed)
         # self.spectrogram_widget[widget].getFigure().colorbar(spectrogram_image, ax=spectrogram_axes, format='%+2.0f dB')
-
         # Redraw the spectrogram widget
         self.spectrogram_widget[widget].draw()
-
-        
 
     def playMusic(self):
         self.changed =  True
@@ -333,16 +328,13 @@ class EqualizerApp(QtWidgets.QMainWindow):
         
 
     def updatepos(self):
-       # Get the current position in milliseconds
+    # Get the current position in milliseconds
         position = self.player.position()/1000
-
         # Update the line position based on the current position
         self.line_position = position 
-
         max_x = self.original_graph.getViewBox().viewRange()[0][1]
         if self.line_position > max_x:
             self.line_position = max_x
-
         self.line.setPos(self.line_position)
 
     def play_pause(self):
@@ -371,38 +363,16 @@ class EqualizerApp(QtWidgets.QMainWindow):
     #         # Ensure the index is within the bounds of the plotted signal
     #         index = max(0, min(index, max_index))
     #         self.line.setPos(index)
+            # Add vertical leines for start and end indices for each mode
+            # for start_ind, end_ind in signal.Ranges:
+                
+            # # Add vertical line at the end for 'Uniform Range'
+            # if self.modes_combobox.currentIndex() == 'Uniform Range' and signal.Ranges:
+            #     _, end_ind = signal.Ranges[-1]
+            #     v_line_end_uniform = pg.InfiniteLine(pos=signal.freq_data[0][end_ind], angle=90, movable=False, pen=pg.mkPen('b', width=2))
+            #     self.frequancy_graph.addItem(v_line_end_uniform)
 
 
-    def smooth_and_plot(self, signal, smoothing_window):
-    # Apply the selected smoothing window to the data
-        window_parameters = None
-        if smoothing_window == "Gaussian":
-            sigma = float(self.lineEdit_2.text())
-            window_parameters = {"sigma": sigma}
-        smoothing_window_obj = SmoothingWindow(
-            smoothing_window, window_parameters)
-        smoothed_data = smoothing_window_obj.apply(signal.freq_data[1])
-
-        if smoothed_data is not None:
-            # Plot the smoothed data
-            x_values_smooth, y_values_smooth = [], []
-            for i in range(smoothed_data.shape[1]):
-                x_values_smooth.extend(signal.Freq_splits[:, i])
-                y_values_smooth.extend(smoothed_data[:, i])
-            plot_item_smooth = self.frequancy_graph.plot(
-                x_values_smooth, y_values_smooth, pen='r', name=f"{signal.name} (Smoothed)")
-            # Add legend for the smoothed plot
-            legend_smooth = self.frequancy_graph.addLegend()
-            legend_smooth.addItem(
-                plot_item_smooth, name=f"{signal.name} (Smoothed)")
-        else:
-            print("Error: Smoothing operation failed.")
-        
-    def apply_smoothing(self):
-        if self.current_signal:
-            smoothing_window = self.smoothing_window_combobox.currentText()
-            if smoothing_window != "None":
-                self.smooth_and_plot(self.current_signal, smoothing_window)
     def combobox_activated(self):
         # Get the selected item's text and display it in the label
         selected_index = self.modes_combobox.currentIndex()
@@ -417,6 +387,7 @@ class EqualizerApp(QtWidgets.QMainWindow):
         self.selected_window = selected_item
         # Show or hide the line edit based on the selected smoothing window
         self.lineEdit_2.setVisible(selected_item == 'Gaussian')
+
     def clear_layout(self ,layout):
         for i in reversed(range(layout.count())):
             item = layout.itemAt(i)

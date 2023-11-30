@@ -1,5 +1,6 @@
 from scipy.fft import fft
 import numpy as np
+from scipy.io import wavfile
 import pandas as pd
 import time
 from matplotlib.figure import Figure
@@ -100,16 +101,29 @@ class EqualizerApp(QtWidgets.QMainWindow):
         self.apply_btn.clicked.connect(lambda: self.plot_freq_smoothing_window())
         self.play_pause_btn.clicked.connect(lambda: self.play_pause()) 
         self.replay_btn.clicked.connect(lambda: self.playMusic())
+        self.speed_up_btn.clicked.connect(lambda: self.speed_up()) 
+        self.speed_down_btn.clicked.connect(lambda: self.speed_down())  
+        
+
         self.player = QMediaPlayer(None,QMediaPlayer.StreamPlayback)
         self.player.setVolume(50)
         #self.timer = QtCore.QTimer() 
         self.timer = QTimer(self)
-        self.timer.setInterval(200)
+        self.timer = QtCore.QTimer(self)
+        self.elapsed_timer = QtCore.QElapsedTimer()
+        self.timer.timeout.connect(self.updatepos)
+
+        self.timer.setInterval(50)
         self.timer.timeout.connect(self.updatepos)
         self.line = pg.InfiniteLine(pos=0, angle=90, pen=None, movable=False)
         self.changed = True
         self.line_position = 0
         self.player.positionChanged.connect(self.updatepos)
+        self.current_speed = 1
+
+
+        
+
         self.line = pg.InfiniteLine(pos=0.1, angle=90, pen=None, movable=False)
         # spectooooooo
         self.available_palettes = ['twilight', 'Blues', 'Greys', 'ocean', 'nipy_spectral']
@@ -321,6 +335,7 @@ class EqualizerApp(QtWidgets.QMainWindow):
     def playMusic(self):
         self.changed =  True
         media = QMediaContent(QUrl.fromLocalFile(self.audio_data))
+        #self.sampling_freq, _ = wavfile.read(self.audio_data)
         self.player.setMedia(media)
         self.player.play()
         self.original_graph.addItem (self.line)
@@ -335,7 +350,30 @@ class EqualizerApp(QtWidgets.QMainWindow):
         max_x = self.original_graph.getViewBox().viewRange()[0][1]
         if self.line_position > max_x:
             self.line_position = max_x
+        self.line_position = position
+
+        max_x = self.original_graph.getViewBox().viewRange()[0][1]
+        if self.line_position > max_x:
+            self.line_position = max_x -0.052
+
         self.line.setPos(self.line_position)
+        #print (self.line.getPos()[0], self.player.position())
+
+    def speed_up(self):
+        # Increase the playback speed
+       
+        self.current_speed = self.current_speed + 0.1  # You can adjust the increment as needed
+        self.player.setPlaybackRate(self.current_speed)
+        #print(self.current_speed)
+
+    def speed_down(self):
+        # Decrease the playback speed
+        self.current_speed = self.current_speed - 0.1  # You can adjust the increment as needed
+        new_speed = max(0.1, self.current_speed - 0.1)  # Ensure speed doesn't go below 0.1
+        self.player.setPlaybackRate(new_speed)
+        #print(new_speed)
+
+    
 
     def play_pause(self):
         if self.changed:

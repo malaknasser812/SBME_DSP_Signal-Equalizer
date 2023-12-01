@@ -420,80 +420,36 @@ color:#34455e;
       <item row="0" column="1">
        <layout class="QGridLayout" name="gridLayout_4">
         <item row="0" column="0">
-         <layout class="QVBoxLayout" name="verticalLayout_10">
-          <item>
+         <layout class="QGridLayout" name="gridLayout_4">
+          <item row="0" column="0">
            <layout class="QGridLayout" name="gridLayout">
-            <item row="0" column="0">
+            <item row="0" column="0" colspan="2">
              <layout class="QHBoxLayout" name="horizontalLayout">
               <item>
-               <layout class="QVBoxLayout" name="verticalLayout_2">
+               <layout class="QVBoxLayout" name="verticalLayout_9">
                 <item>
-                 <widget class="QLabel" name="label">
-                  <property name="minimumSize">
-                   <size>
-                    <width>0</width>
-                    <height>20</height>
-                   </size>
-                  </property>
-                  <property name="maximumSize">
-                   <size>
-                    <width>16777215</width>
-                    <height>20</height>
-                   </size>
-                  </property>
-                  <property name="font">
-                   <font>
-                    <pointsize>10</pointsize>
-                    <weight>50</weight>
-                    <bold>false</bold>
-                   </font>
-                  </property>
-                  <property name="text">
-                   <string>Original plot </string>
-                  </property>
-                 </widget>
-                </item>
-                <item>
-                 <widget class="PlotWidget" name="original_graph" native="true">
-                  <property name="minimumSize">
-                   <size>
-                    <width>0</width>
-                    <height>230</height>
-                   </size>
-                  </property>
-                  <property name="maximumSize">
-                   <size>
-                    <width>16777215</width>
-                    <height>230</height>
-                   </size>
-                  </property>
-                 </widget>
+                 <layout class="QVBoxLayout" name="verticalLayout">
+                  <item>
+                   <widget class="QLabel" name="label">
+                    <property name="font">
+                     <font>
+                      <pointsize>10</pointsize>
+                      <weight>75</weight>
+                      <bold>true</bold>
+                     </font>
+                    </property>
+                    <property name="text">
+                     <string>Original plot </string>
+                    </property>
+                   </widget>
+                  </item>
+                  <item>
+                   <widget class="QGraphicsView" name="original_graph"/>
+                  </item>
+                 </layout>
                 </item>
                 <item>
                  <widget class="QPushButton" name="hear_orig_btn">
-                  <property name="minimumSize">
-                   <size>
-                    <width>0</width>
-                    <height>40</height>
-                   </size>
-                  </property>
-                  <property name="styleSheet">
-                   <string notr="true">
-QPushButton {
-background :#34455e;
-border-radius: 10px;
-color: white;
-}
-
-QPushButton:hover {
-    background-color: white;
-    border: 2px solid #475c7a; 
-    cursor: pointer; 
-
-border-radius: 10px ; 
-color:#34455e;
-}</string>
-                  </property>
                   <property name="text">
                    <string>hear original</string>
                   </property>
@@ -502,23 +458,7 @@ color:#34455e;
                </layout>
               </item>
               <item>
-               <layout class="QVBoxLayout" name="verticalLayout">
-                <item>
-                 <spacer name="horizontalSpacer_2">
-                  <property name="orientation">
-                   <enum>Qt::Horizontal</enum>
-                  </property>
-                  <property name="sizeType">
-                   <enum>QSizePolicy::Fixed</enum>
-                  </property>
-                  <property name="sizeHint" stdset="0">
-                   <size>
-                    <width>10</width>
-                    <height>20</height>
-                   </size>
-                  </property>
-                 </spacer>
-                </item>
+               <layout class="QVBoxLayout" name="verticalLayout_11">
                 <item>
                  <widget class="QPushButton" name="play_pause_btn">
                   <property name="text">
@@ -548,27 +488,13 @@ color:#34455e;
                  </widget>
                 </item>
                 <item>
-                 <widget class="QPushButton" name="zoom_in_btn">
+                 <widget class="QPushButton" name="speed_down_btn">
                   <property name="text">
                    <string/>
                   </property>
                   <property name="icon">
                    <iconset>
-                    <normaloff>imgs/zoom-in.png</normaloff>imgs/zoom-in.png</iconset>
-                  </property>
-                  <property name="flat">
-                   <bool>true</bool>
-                  </property>
-                 </widget>
-                </item>
-                <item>
-                 <widget class="QPushButton" name="zoom_out_btn">
-                  <property name="text">
-                   <string/>
-                  </property>
-                  <property name="icon">
-                   <iconset>
-                    <normaloff>imgs/zoom-out.png</normaloff>imgs/zoom-out.png</iconset>
+                    <normaloff>imgs/speed down.png</normaloff>imgs/speed down.png</iconset>
                   </property>
                   <property name="flat">
                    <bool>true</bool>
@@ -590,13 +516,13 @@ color:#34455e;
                  </widget>
                 </item>
                 <item>
-                 <widget class="QPushButton" name="speed_down_btn">
+                 <widget class="QPushButton" name="zoom_out_btn">
                   <property name="text">
                    <string/>
                   </property>
                   <property name="icon">
                    <iconset>
-                    <normaloff>imgs/speed down.png</normaloff>imgs/speed down.png</iconset>
+                    <normaloff>imgs/zoom-out.png</normaloff>imgs/zoom-out.png</iconset>
                   </property>
                   <property name="flat">
                    <bool>true</bool>
@@ -604,92 +530,46 @@ color:#34455e;
                  </widget>
                 </item>
                 <item>
-                 <spacer name="horizontalSpacer">
-                  <property name="orientation">
-                   <enum>Qt::Horizontal</enum>
+                 <widget class="QPushButton" name="zoom_in_btn">
+                  <property name="text">
+                   <string/>
                   </property>
-                  <property name="sizeType">
-                   <enum>QSizePolicy::Fixed</enum>
+                  <property name="icon">
+                   <iconset>
+                    <normaloff>imgs/zoom-in.png</normaloff>imgs/zoom-in.png</iconset>
                   </property>
-                  <property name="sizeHint" stdset="0">
-                   <size>
-                    <width>10</width>
-                    <height>20</height>
-                   </size>
+                  <property name="flat">
+                   <bool>true</bool>
                   </property>
-                 </spacer>
+                 </widget>
                 </item>
                </layout>
               </item>
               <item>
-               <layout class="QVBoxLayout" name="verticalLayout_4">
+               <layout class="QVBoxLayout" name="verticalLayout_10">
                 <item>
-                 <widget class="QLabel" name="label_2">
-                  <property name="minimumSize">
-                   <size>
-                    <width>0</width>
-                    <height>20</height>
-                   </size>
-                  </property>
-                  <property name="maximumSize">
-                   <size>
-                    <width>16777215</width>
-                    <height>20</height>
-                   </size>
-                  </property>
-                  <property name="font">
-                   <font>
-                    <pointsize>10</pointsize>
-                    <weight>50</weight>
-                    <bold>false</bold>
-                   </font>
-                  </property>
-                  <property name="text">
-                   <string>Equalized  plot </string>
-                  </property>
-                 </widget>
-                </item>
-                <item>
-                 <widget class="PlotWidget" name="equalized_graph" native="true">
-                  <property name="minimumSize">
-                   <size>
-                    <width>0</width>
-                    <height>230</height>
-                   </size>
-                  </property>
-                  <property name="maximumSize">
-                   <size>
-                    <width>16777215</width>
-                    <height>230</height>
-                   </size>
-                  </property>
-                 </widget>
+                 <layout class="QVBoxLayout" name="verticalLayout_2">
+                  <item>
+                   <widget class="QLabel" name="label_2">
+                    <property name="font">
+                     <font>
+                      <pointsize>10</pointsize>
+                      <weight>75</weight>
+                      <bold>true</bold>
+                     </font>
+                    </property>
+                    <property name="text">
+                     <string>Equalized  plot </string>
+                    </property>
+                   </widget>
+                  </item>
+                  <item>
+                   <widget class="QGraphicsView" name="equalized_graph"/>
+                  </item>
+                 </layout>
                 </item>
                 <item>
                  <widget class="QPushButton" name="hear_eq_btn">
-                  <property name="minimumSize">
-                   <size>
-                    <width>0</width>
-                    <height>40</height>
-                   </size>
-                  </property>
-                  <property name="styleSheet">
-                   <string notr="true">
-QPushButton {
-background :#34455e;
-border-radius: 10px;
-color: white;
-}
-
-QPushButton:hover {
-    background-color: white;
-    border: 2px solid #475c7a; 
-    cursor: pointer; 
-
-border-radius: 10px ; 
-color:#34455e;
-}</string>
-                  </property>
                   <property name="text">
                    <string>hear equalized</string>
                   </property>
@@ -700,105 +580,54 @@ color:#34455e;
              </layout>
             </item>
             <item row="1" column="0">
-             <layout class="QHBoxLayout" name="horizontalLayout_2">
+             <layout class="QVBoxLayout" name="verticalLayout_3">
               <item>
-               <layout class="QVBoxLayout" name="verticalLayout_3">
-                <item>
-                 <widget class="QLabel" name="label_3">
-                  <property name="minimumSize">
-                   <size>
-                    <width>0</width>
-                    <height>20</height>
-                   </size>
-                  </property>
-                  <property name="maximumSize">
-                   <size>
-                    <width>16777215</width>
-                    <height>20</height>
-                   </size>
-                  </property>
-                  <property name="font">
-                   <font>
-                    <pointsize>10</pointsize>
-                    <weight>50</weight>
-                    <bold>false</bold>
-                   </font>
-                  </property>
-                  <property name="text">
-                   <string>Original Spectrogram</string>
-                  </property>
-                 </widget>
-                </item>
-                <item>
-                 <widget class="PlotWidget" name="spectrogram_before" native="true">
-                  <property name="minimumSize">
-                   <size>
-                    <width>0</width>
-                    <height>230</height>
-                   </size>
-                  </property>
-                  <property name="maximumSize">
-                   <size>
-                    <width>16777215</width>
-                    <height>230</height>
-                   </size>
-                  </property>
-                 </widget>
-                </item>
-               </layout>
+               <widget class="QLabel" name="label_3">
+                <property name="font">
+                 <font>
+                  <pointsize>10</pointsize>
+                  <weight>75</weight>
+                  <bold>true</bold>
+                 </font>
+                </property>
+                <property name="text">
+                 <string>Original Spectrogram</string>
+                </property>
+               </widget>
               </item>
               <item>
-               <layout class="QVBoxLayout" name="verticalLayout_8">
-                <item>
-                 <widget class="QLabel" name="label_4">
-                  <property name="minimumSize">
-                   <size>
-                    <width>0</width>
-                    <height>20</height>
-                   </size>
-                  </property>
-                  <property name="maximumSize">
-                   <size>
-                    <width>16777215</width>
-                    <height>20</height>
-                   </size>
-                  </property>
-                  <property name="font">
-                   <font>
-                    <pointsize>10</pointsize>
-                    <weight>50</weight>
-                    <bold>false</bold>
-                   </font>
-                  </property>
-                  <property name="text">
-                   <string>Equalized Spectrogram</string>
-                  </property>
-                 </widget>
-                </item>
-                <item>
-                 <widget class="PlotWidget" name="spectrogram_after" native="true">
-                  <property name="minimumSize">
-                   <size>
-                    <width>0</width>
-                    <height>230</height>
-                   </size>
-                  </property>
-                  <property name="maximumSize">
-                   <size>
-                    <width>16777215</width>
-                    <height>230</height>
-                   </size>
-                  </property>
-                 </widget>
-                </item>
-               </layout>
+               <widget class="QGraphicsView" name="spectrogram_before"/>
               </item>
              </layout>
             </item>
+            <item row="1" column="1">
+             <layout class="QVBoxLayout" name="verticalLayout_4">
+              <item>
+               <widget class="QLabel" name="label_4">
+                <property name="font">
+                 <font>
+                  <pointsize>10</pointsize>
+                  <weight>75</weight>
+                  <bold>true</bold>
+                 </font>
+                </property>
+                <property name="text">
+                 <string>Equalized Spectrogram</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QGraphicsView" name="spectrogram_after"/>
+              </item>
+             </layout>
+            </item>
+            <item>
+             <widget class="PlotWidget" name="spectrogram_after" native="true"/>
+            </item>
            </layout>
           </item>
-          <item>
-           <layout class="QVBoxLayout" name="verticalLayout_9">
+          <item row="1" column="0">
+           <layout class="QVBoxLayout" name="verticalLayout_8">
             <item>
              <widget class="QLabel" name="label_8">
               <property name="minimumSize">
@@ -826,20 +655,7 @@ color:#34455e;
              </widget>
             </item>
             <item>
-             <widget class="PlotWidget" name="frequancy_graph" native="true">
-              <property name="minimumSize">
-               <size>
-                <width>0</width>
-                <height>230</height>
-               </size>
-              </property>
-              <property name="maximumSize">
-               <size>
-                <width>16777215</width>
-                <height>230</height>
-               </size>
-              </property>
-             </widget>
+             <widget class="QGraphicsView" name="frequancy_graph"/>
             </item>
            </layout>
           </item>
@@ -885,14 +701,6 @@ color:#34455e;
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
  </widget>
- <customwidgets>
-  <customwidget>
-   <class>PlotWidget</class>
-   <extends>QWidget</extends>
-   <header location="global">pyqtgraph</header>
-   <container>1</container>
-  </customwidget>
- </customwidgets>
  <resources/>
  <connections>
   <connection>

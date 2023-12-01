@@ -154,32 +154,6 @@ class EqualizerApp(QtWidgets.QMainWindow):
                                 }
         return dictnoary_values
 
-    # def set_slider_range(self):
-    #     if self.selected_mode == 'Animal Sounds':
-    #         dictnoary_values = {"cat": [400, 420],
-    #                             "dog": [600, 700],
-    #                             "owl": [1300, 1600],
-    #                             "lion": [3000, 4000]
-    #                             }
-    #         values_slider = [[0, 10, 1]]*len(list(self.dictnoary_values.keys()))
-
-    #     elif self.selected_mode == 'Music Instruments':
-    #         self.dictnoary_values = {"Drum ": [0, 150],
-    #                             "Flute": [150, 600],
-    #                             "Key": [600, 800],
-    #                             "Piano": [800, 1200]
-    #                             }
-    #         values_slider = [[0, 10, 1]]*len(list(self.dictnoary_values.keys()))
-
-    #     elif self.selected_mode == 'ECG Abnormalities':
-    #         self.dictnoary_values = {"Arithmia_1 ": [0, 500],
-    #                             "Arithmia_2": [500, 1000],
-    #                             "Arithmia_3": [1000, 2000]
-    #                             }
-    #         values_slider = [[0, 10, 1]]*len(list(self.dictnoary_values.keys()))
-
-
-
     def load(self):
         path_info = QtWidgets.QFileDialog.getOpenFileName(
             None, "Select a signal...",os.getenv('HOME'), filter="Raw Data (*.csv *.wav *.mp3)")
@@ -270,7 +244,6 @@ class EqualizerApp(QtWidgets.QMainWindow):
 
     def plot_freq_smoothing_window (self):
         signal = self.eqsignal if self.equalized_bool  else self.current_signal
-       
         if signal and signal.Ranges:  # Check if signal is not None and signal.Ranges is not empty
             start_last_ind, end_last_ind = signal.Ranges[-1]
             #print("helloooo")
@@ -488,33 +461,24 @@ class EqualizerApp(QtWidgets.QMainWindow):
         #print (value)
         self.equalized_bool = True
         self.eqsignal = copy.deepcopy(self.current_signal) 
-        
         for i in range(self.current_signal.Ranges[slider_index][0],self.current_signal.Ranges[slider_index][1]):  
             #print('before',self.current_signal.freq_data[1][i])        
             self.eqsignal.freq_data[1][i] = self.current_signal.freq_data[1][i] * value
-            # self.eqsignal = self.current_signal.freq_data[1][i] * value
-
             #print('after',self.eqsignal.freq_data[1][i], self.current_signal.freq_data[1][i])
-        
-        
         self.plot_freq_smoothing_window()
-        self.time_eq_signal.time = self.current_signal.time
-        self.time_eq_signal = self.recovered_signal(self.eqsignal.data, self.current_signal.phase)
-        
+        # self.eqsignal.phase = self.current_signal.phase
+        self.time_eq_signal = self.recovered_signal(self.eqsignal.freq_data[1], self.eqsignal.phase)
+        self.eqsignal.time = self.current_signal.time
+        self.Plot("equalized")
 
     def recovered_signal(self,Amp, phase):
         # complex array from amp and phase comination
-        # Amp = Amp.reshape((len(Amp), 1))  # Reshape Amp to have a second dimension
-        #phase = phase.T
-        print(phase)
         complex_value = Amp * np.exp(1j*phase)
         # taking inverse fft to get recover signal
         recovered_signal = np.fft.ifft(complex_value)
         # taking only the real part of the signal
         return np.real(recovered_signal)
 
-    
-    
     def hide(self):
         if (self.checkBox.isChecked()):
             self.spectrogram_before.hide()

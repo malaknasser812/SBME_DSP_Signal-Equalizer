@@ -93,11 +93,10 @@ class EqualizerApp(QtWidgets.QMainWindow):
         super(EqualizerApp, self).__init__(*args, **kwargs)
         # Load the UI Page
         uic.loadUi(r'task3.ui', self)
-        self.dictnoary_values = {}
         self.original_graph.setBackground("#ffff")
         self.equalized_graph.setBackground("#ffff")
         self.frequancy_graph.setBackground("#ffff")
-        self.selected_mode = 'Uniform Range'
+        self.selected_mode = None
         self.selected_window = None
         self.frame_layout = QHBoxLayout(self.sliders_frame)
         self.current_signal=None
@@ -198,13 +197,9 @@ class EqualizerApp(QtWidgets.QMainWindow):
         self.current_signal.freq_data = [x_data, y_data]
         # self.set_slider_range()
         print('aho assigned yabny')
-        self.eqsignal = copy.deepcopy(self.current_signal)
         self.Plot("original")
+        self.eqsignal = copy.deepcopy(self.current_signal)
         self.plot_spectrogram(data, sample_rate ,time, self.spectrogram_before)
-        # Determine frequency ranges based on the selected mode
-        self.Range_spliting()
-        # Plot the frequency smoothing window
-        self.plot_freq_smoothing_window()
 
     def get_Fourier(self, T, data):
         N=len(data)

@@ -452,7 +452,7 @@ class EqualizerApp(QtWidgets.QMainWindow):
     def equalized(self, slider_index,value):
         #print (value)
         self.equalized_bool = True
-        self.eqsignal = copy.deepcopy(self.current_signal) 
+        #self.eqsignal = copy.deepcopy(self.current_signal) 
         # Get smoothing window parameters
         windowtype = self.smoothing_window_combobox.currentText()
         # Convert sigma_text to integer if not empty, otherwise set a default value

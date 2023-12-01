@@ -32,6 +32,7 @@ class Signal:
         self.freq_data = None
         self.Ranges = []
         self.phase = None
+        self.eqdata = []
 
 class SmoothingWindow:
     def __init__(self, window_type, amp,sigma=None):
@@ -136,16 +137,16 @@ class EqualizerApp(QtWidgets.QMainWindow):
         self.selected_mode = self.modes_combobox.currentText()
         dictnoary_values ={}
         if self.selected_mode == 'Animal Sounds':
-            dictnoary_values = {"cat": [400, 420],
-                                "dog": [600, 700],
-                                "owl": [1300, 1600],
-                                "lion": [3000, 4000]
+            dictnoary_values = {"lion": [160, 215],
+                                "dog": [345, 450],
+                                "cat": [400, 420],
+                                "owl": [730, 900]
                                 }
         elif self.selected_mode == 'Musical Instruments':
-            dictnoary_values = {"Drum ": [0, 150],
-                                "Flute": [150, 600],
-                                "Key": [600, 800],
-                                "Piano": [800, 1200]
+            dictnoary_values = {"Guitar": [80,400],
+                                "Flute": [400, 800],
+                                "Violin ": [950, 4000],
+                                "Xylophone": [4000, 14000]
                                 }
         elif self.selected_mode == 'ECG Abnormalities':
             dictnoary_values = {"Arithmia_1 ": [0, 500],
@@ -217,7 +218,7 @@ class EqualizerApp(QtWidgets.QMainWindow):
             self.current_signal.Ranges = [(i*batch_size,(i+1)*batch_size) for i in range(10)] 
             print (self.current_signal.Ranges)
         else :
-            freq= self.current_signal.freq_data[0] #index zero for mag of freq
+            freq= self.current_signal.freq_data[0] #index zero for values of freq
             print(dictnoary_values.items())
             # Calculate frequency indices for specified ranges
             for _,(start,end) in dictnoary_values.items():
@@ -466,21 +467,28 @@ class EqualizerApp(QtWidgets.QMainWindow):
     def equalized(self, slider_index,value):
         #print (value)
         self.equalized_bool = True
-        #self.eqsignal = copy.deepcopy(self.current_signal) # avoid calling by reference 
-        for i in range(self.current_signal.Ranges[slider_index][0],self.current_signal.Ranges[slider_index][1]):  
-            #print('before',self.current_signal.freq_data[1][i])        
-            self.eqsignal.freq_data[1][i] = self.current_signal.freq_data[1][i] * value
-            #print('after',self.eqsignal.freq_data[1][i], self.current_signal.freq_data[1][i])
-
-        # self.frequancy_graph.clear()
-        # self.frequancy_graph.plot(self.eqsignal.freq_data[0], self.eqsignal.freq_data[1], pen={'color': 'w'})
-
+        self.eqsignal = copy.deepcopy(self.current_signal) 
+        # Get smoothing window parameters
+        windowtype = self.smoothing_window_combobox.currentText()
+        # Convert sigma_text to integer if not empty, otherwise set a default value
+        sigma_text = self.lineEdit_2.text()
+        if sigma_text:
+            sigma = int(sigma_text)
+        else:
+            sigma = 20  # Set a default value if the text is empty
+        # amp = value
+        start,end = self.current_signal.Ranges[slider_index]
+        # Apply the smoothing window
+        smooth_window = SmoothingWindow(windowtype,1,sigma)
+        curr_smooth_window = smooth_window.apply(self.current_signal.freq_data[1][start:end])
+        curr_smooth_window *= value
+        Amp = np.array(self.current_signal.freq_data[1][start:end])   
+        new_amp = Amp * curr_smooth_window
+        self.eqsignal.freq_data[1][start:end] = new_amp
         self.plot_freq_smoothing_window()
         # self.eqsignal.phase = self.current_signal.phase
         self.time_eq_signal.data= self.recovered_signal(self.eqsignal.freq_data[1], self.eqsignal.phase)[0]
         self.time_eq_signal.time = self.current_signal.time
-
-        #self.Plot("equalized")
 
     def recovered_signal(self,Amp, phase):
         # complex array from amp and phase comination

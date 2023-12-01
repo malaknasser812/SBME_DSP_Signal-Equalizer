@@ -2,12 +2,11 @@ from scipy.fft import fft
 import numpy as np
 import pandas as pd
 import copy
-from PyQt5.QtWidgets import QSlider,QHBoxLayout 
+from PyQt5.QtWidgets import QSlider,QHBoxLayout ,QLabel
 import matplotlib as plt
 import pyqtgraph as pg
-from PyQt5 import QtWidgets, QtCore, uic    
 from pyqtgraph import ImageItem
-from PyQt5 import QtWidgets, QtCore, uic
+from PyQt5 import QtWidgets, QtCore, uic 
 from PyQt5.QtMultimedia import QMediaPlayer, QMediaContent
 from PyQt5.QtCore import QUrl, QTimer
 from PySide6.QtMultimedia import QMediaPlayer
@@ -86,7 +85,6 @@ class EqualizerApp(QtWidgets.QMainWindow):
         super(EqualizerApp, self).__init__(*args, **kwargs)
         # Load the UI Page
         uic.loadUi(r'task3.ui', self)
-        # self.dictnoary_values = {}
         self.selected_mode = 'Uniform Range'
         self.selected_window = None
         self.frame_layout = QHBoxLayout(self.sliders_frame)
@@ -117,7 +115,6 @@ class EqualizerApp(QtWidgets.QMainWindow):
             'before': self.spectrogram_before,
             'after': self.spectrogram_after
         }
-        self.sliders_list =[]
         # Ui conection
         self.modes_combobox.activated.connect(lambda: self.combobox_activated())
         self.smoothing_window_combobox.activated.connect(lambda: self.smoothing_window_combobox_activated())
@@ -139,8 +136,8 @@ class EqualizerApp(QtWidgets.QMainWindow):
         if self.selected_mode == 'Animal Sounds':
             dictnoary_values = {"lion": [160, 215],
                                 "dog": [345, 450],
-                                "cat": [400, 420],
-                                "owl": [730, 900]
+                                "owl": [730, 900],
+                                "cat": [2134, 2560]
                                 }
         elif self.selected_mode == 'Musical Instruments':
             dictnoary_values = {"Guitar": [80,400],
@@ -200,11 +197,11 @@ class EqualizerApp(QtWidgets.QMainWindow):
     def get_Fourier(self, T, data):
         N=len(data)
         freq_amp= np.fft.fft(data)
+        self.current_signal.phase = np.angle(freq_amp[:N//2])
         # Calculate the corresponding frequencies
         Freq= np.fft.fftfreq(N, T)[:N//2]
         # Extracting positive frequencies and scaling the amplitude
         Amp = (2/N)*(np.abs(freq_amp[:N//2]))
-        self.current_signal.phase = np.angle(Amp[:N//2])
         return Freq, Amp
 
     def Range_spliting(self):
@@ -216,7 +213,7 @@ class EqualizerApp(QtWidgets.QMainWindow):
             batch_size = int(len(self.current_signal.freq_data[0])/10) 
             self.current_signal.Ranges = [(i*batch_size,(i+1)*batch_size) for i in range(10)] 
             print (self.current_signal.Ranges)
-        else :
+        else:
             freq = self.current_signal.freq_data[0] #index zero for values of freq
             print(dictnoary_values.items())
             # Calculate frequency indices for specified ranges
@@ -266,10 +263,7 @@ class EqualizerApp(QtWidgets.QMainWindow):
                     windowtype = self.smoothing_window_combobox.currentText()
                     # Convert sigma_text to integer if not empty, otherwise set a default value
                     sigma_text = self.lineEdit_2.text()
-                    if sigma_text:
-                        sigma = int(sigma_text)
-                    else:
-                        sigma = 20  # Set a default value if the text is empty
+                    sigma = int(sigma_text) if sigma_text else 20  # Set a default value if the text is empty
                     amp = max(signal.freq_data[1][start_ind:end_ind])
                     # Apply the smoothing window
                     smooth_window = SmoothingWindow(windowtype,amp,sigma)
@@ -373,7 +367,6 @@ class EqualizerApp(QtWidgets.QMainWindow):
             self.timer.start()
             self.changed = not self.changed
 
-
     # def position_changed(self): 
     #     current_time = self.player.get_time()
     #     total_duration = self.player.get_length()
@@ -397,7 +390,6 @@ class EqualizerApp(QtWidgets.QMainWindow):
             #     _, end_ind = signal.Ranges[-1]
             #     v_line_end_uniform = pg.InfiniteLine(pos=signal.freq_data[0][end_ind], angle=90, movable=False, pen=pg.mkPen('b', width=2))
             #     self.frequancy_graph.addItem(v_line_end_uniform)
-
 
     def combobox_activated(self):
         # Get the selected item's text and display it in the label
@@ -430,16 +422,22 @@ class EqualizerApp(QtWidgets.QMainWindow):
                 self.slider_gain[i] = 10
                 slider.valueChanged.connect(lambda value, i=i: self.update_slider_value(i, value/10))
                 self.frame_layout.addWidget(slider) 
-                self.sliders_list.append(slider) 
         else:
+            # either musical, animal or ecg
             self.clear_layout(self.frame_layout) 
-            for i in range(4): # either musical, animal or ecg
+            dict_ranges = self.dict_ranges()
+            # for key in dict_ranges.keys():  # Use enumerate to get both index and key
+            for i,(key,_ )in enumerate(dict_ranges.items()):
+                # print(f"Index: {i}, Key: {key}")
+                label = QLabel(key)  # Create a label with a unique identifier
+                self.frame_layout.addWidget(label)
                 slider_creator = CreateSlider(i)
                 slider = slider_creator.get_slider()
-                # self.slider_gain = {i:1}
+                self.slider_gain[i] = 10
+                slider.valueChanged.connect(lambda value, i=i: self.update_slider_value(i, value/10))
                 self.frame_layout.addWidget(slider)
-                self.sliders_list.append(slider) 
-        #print(self.sliders_list[0].value())
+                # dict = self.dict_ranges()
+                # self.slider_gain = {i:1}
         #print (self.slider_gain)
 
     def update_slider_value(self, slider_index, value):
@@ -452,15 +450,12 @@ class EqualizerApp(QtWidgets.QMainWindow):
     def equalized(self, slider_index,value):
         #print (value)
         self.equalized_bool = True
-        #self.eqsignal = copy.deepcopy(self.current_signal) 
+        self.time_eq_signal.time = self.current_signal.time
         # Get smoothing window parameters
         windowtype = self.smoothing_window_combobox.currentText()
         # Convert sigma_text to integer if not empty, otherwise set a default value
         sigma_text = self.lineEdit_2.text()
-        if sigma_text:
-            sigma = int(sigma_text)
-        else:
-            sigma = 20  # Set a default value if the text is empty
+        sigma = int(sigma_text) if sigma_text else 20  # Set a default value if the text is empty
         # amp = value
         start,end = self.current_signal.Ranges[slider_index]
         # Apply the smoothing window
@@ -472,11 +467,16 @@ class EqualizerApp(QtWidgets.QMainWindow):
         self.eqsignal.freq_data[1][start:end] = new_amp
         self.plot_freq_smoothing_window()
         # self.eqsignal.phase = self.current_signal.phase
-        self.time_eq_signal.data= self.recovered_signal(self.eqsignal.freq_data[1], self.eqsignal.phase)[0]
-        self.time_eq_signal.time = self.current_signal.time
+        self.time_eq_signal.data = self.recovered_signal(self.eqsignal.freq_data[1], self.current_signal.phase)
+        print(len(self.time_eq_signal.data))
+        print(len(self.time_eq_signal.time))
+        excess = len(self.time_eq_signal.time)-len(self.time_eq_signal.data)
+        self.time_eq_signal.time = self.time_eq_signal.time[:-excess]
+        self.Plot("equalized")
 
     def recovered_signal(self,Amp, phase):
         # complex array from amp and phase comination
+        Amp = Amp * len(self.current_signal.data)/2
         complex_value = Amp * np.exp(1j*phase)
         # taking inverse fft to get recover signal
         recovered_signal = np.fft.irfft(complex_value)

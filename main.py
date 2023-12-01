@@ -1,6 +1,7 @@
 from scipy.fft import fft
 import numpy as np
 import pandas as pd
+import copy
 from PyQt5.QtWidgets import QSlider,QHBoxLayout 
 import matplotlib as plt
 import pyqtgraph as pg
@@ -30,6 +31,7 @@ class Signal:
         self.sample_rate = None
         self.freq_data = None
         self.Ranges = []
+        self.phase = None
 
 class SmoothingWindow:
     def __init__(self, window_type, amp,sigma=None):
@@ -40,6 +42,9 @@ class SmoothingWindow:
         if self.window_type == "Rectangular":
             window = sg.windows.boxcar(len(signal))
             smoothed_signal = self.amp * window 
+            smoothed_signal = self.amp * window
+            #print("smoothed_signal")
+            #print(smoothed_signal)
             return smoothed_signal
         elif self.window_type == "Hamming":
             window = sg.windows.hamming(len(signal))
@@ -98,6 +103,10 @@ class EqualizerApp(QtWidgets.QMainWindow):
         self.line_position = 0
         self.player.positionChanged.connect(self.updatepos)
         self.current_speed = 1
+        self.slider_gain = {}
+        self.equalized_bool = False
+        self.time_eq_signal = Signal('timeeq')
+        
 
         self.line = pg.InfiniteLine(pos=0.1, angle=90, pen=None, movable=False)
         # spectooooooo
@@ -218,16 +227,19 @@ class EqualizerApp(QtWidgets.QMainWindow):
         Freq= np.fft.fftfreq(N, T)[:N//2]
         # Extracting positive frequencies and scaling the amplitude
         Amp = (2/N)*(np.abs(freq_amp[:N//2]))
+        self.current_signal.phase = np.angle(Amp[:N//2])
         return Freq, Amp
 
     def Range_spliting(self):
         dictnoary_values = self.dict_ranges()
         print (self.modes_combobox.currentText())
         if self.modes_combobox.currentText() == 'Uniform Range':
-            print("hhhhhhhhhhhhhhh")
+            #print("hhhhhhhhhhhhhhh")
             # Divide the frequency range into 10 equal parts for the 'Uniform Range' mode
+            #print("hhhhhhhhhhhhhhh")
             batch_size = int(len(self.current_signal.freq_data[0])/10) 
             self.current_signal.Ranges = [(i*batch_size,(i+1)*batch_size) for i in range(10)] 
+            print (self.current_signal.Ranges)
         else :
             freq= self.current_signal.freq_data[0] #index zero for mag of freq
             print(dictnoary_values.items())
@@ -257,10 +269,12 @@ class EqualizerApp(QtWidgets.QMainWindow):
                 legend.addItem(plot_item, name=f"{signal.name}")
 
     def plot_freq_smoothing_window (self):
-        signal= self.current_signal
+        signal = self.eqsignal if self.equalized_bool  else self.current_signal
+       
         if signal and signal.Ranges:  # Check if signal is not None and signal.Ranges is not empty
             start_last_ind, end_last_ind = signal.Ranges[-1]
-            print("helloooo")
+            #print("helloooo")
+            #frequency domain
             self.frequancy_graph.clear()
             # Plot the original frequency data in white
             self.frequancy_graph.plot(signal.freq_data[0],
@@ -448,6 +462,8 @@ class EqualizerApp(QtWidgets.QMainWindow):
                 slider_creator = CreateSlider(i)
                 #print(slider_creator.range)
                 slider = slider_creator.get_slider()
+                self.slider_gain[i] = 10
+                slider.valueChanged.connect(lambda value, i=i: self.update_slider_value(i, value/10))
                 self.frame_layout.addWidget(slider) 
                 self.sliders_list.append(slider) 
         else:
@@ -455,17 +471,49 @@ class EqualizerApp(QtWidgets.QMainWindow):
             for i in range(4): # either musical, animal or ecg
                 slider_creator = CreateSlider(i)
                 slider = slider_creator.get_slider()
+                # self.slider_gain = {i:1}
                 self.frame_layout.addWidget(slider)
                 self.sliders_list.append(slider) 
-        print(self.sliders_list[0].value())
+        #print(self.sliders_list[0].value())
+        #print (self.slider_gain)
 
-    def recovered_signal(Amp, phase):
+    def update_slider_value(self, slider_index, value):
+        # This method will be called whenever a slider is moved
+        self.slider_gain[slider_index] = value
+        #print (self.slider_gain)
+        self.equalized(slider_index, value)
+        #self.Plot('equalized')
+
+    def equalized(self, slider_index,value):
+        #print (value)
+        self.equalized_bool = True
+        self.eqsignal = copy.deepcopy(self.current_signal) 
+        
+        for i in range(self.current_signal.Ranges[slider_index][0],self.current_signal.Ranges[slider_index][1]):  
+            #print('before',self.current_signal.freq_data[1][i])        
+            self.eqsignal.freq_data[1][i] = self.current_signal.freq_data[1][i] * value
+            # self.eqsignal = self.current_signal.freq_data[1][i] * value
+
+            #print('after',self.eqsignal.freq_data[1][i], self.current_signal.freq_data[1][i])
+        
+        
+        self.plot_freq_smoothing_window()
+        self.time_eq_signal.time = self.current_signal.time
+        self.time_eq_signal = self.recovered_signal(self.eqsignal.data, self.current_signal.phase)
+        
+
+    def recovered_signal(self,Amp, phase):
         # complex array from amp and phase comination
+        # Amp = Amp.reshape((len(Amp), 1))  # Reshape Amp to have a second dimension
+        #phase = phase.T
+        print(phase)
         complex_value = Amp * np.exp(1j*phase)
         # taking inverse fft to get recover signal
         recovered_signal = np.fft.ifft(complex_value)
         # taking only the real part of the signal
         return np.real(recovered_signal)
+
+    
     
     def hide(self):
         if (self.checkBox.isChecked()):

@@ -211,14 +211,13 @@ class EqualizerApp(QtWidgets.QMainWindow):
         dictnoary_values = self.dict_ranges()
         print (self.modes_combobox.currentText())
         if self.modes_combobox.currentText() == 'Uniform Range':
-            #print("hhhhhhhhhhhhhhh")
+            #print("yaraaaaaaaaaaab")
             # Divide the frequency range into 10 equal parts for the 'Uniform Range' mode
-            #print("hhhhhhhhhhhhhhh")
             batch_size = int(len(self.current_signal.freq_data[0])/10) 
             self.current_signal.Ranges = [(i*batch_size,(i+1)*batch_size) for i in range(10)] 
             print (self.current_signal.Ranges)
         else :
-            freq= self.current_signal.freq_data[0] #index zero for values of freq
+            freq = self.current_signal.freq_data[0] #index zero for values of freq
             print(dictnoary_values.items())
             # Calculate frequency indices for specified ranges
             for _,(start,end) in dictnoary_values.items():
@@ -227,7 +226,6 @@ class EqualizerApp(QtWidgets.QMainWindow):
                 self.current_signal.Ranges.append((start_ind, end_ind))
                 print(self.current_signal.Ranges)
         self.eqsignal.Ranges = copy.deepcopy(self.current_signal.Ranges)
-
 
     def Plot(self, graph):
             signal= self.time_eq_signal if self.equalized_bool else self.current_signal
@@ -252,18 +250,18 @@ class EqualizerApp(QtWidgets.QMainWindow):
         signal = self.eqsignal if self.equalized_bool  else self.current_signal
         #print(signal.Ranges)
         if signal and signal.Ranges:  # Check if signal is not None and signal.Ranges is not empty
-            start_last_ind, end_last_ind = signal.Ranges[-1]
+            _, end_last_ind = signal.Ranges[-1]
             #print("helloooo")
             #frequency domain
             self.frequancy_graph.clear()
             # Plot the original frequency data in white
-            self.frequancy_graph.plot(signal.freq_data[0],
-                    signal.freq_data[1],pen={'color': 'w'})
+            self.frequancy_graph.plot(signal.freq_data[0][:end_last_ind],
+                    signal.freq_data[1][:end_last_ind],pen={'color': 'w'})
             # Iterate through the frequency ranges and plot smoothed windows
             for i in range(len(signal.Ranges)):
-                if i!= len(signal.Ranges)-1 :
+                if i!= len(signal.Ranges) :
+                    print(signal.Ranges[i])
                     start_ind,end_ind = signal.Ranges[i]
-                    v_line_pos = signal.freq_data[0][start_ind]
                     # Get smoothing window parameters
                     windowtype = self.smoothing_window_combobox.currentText()
                     # Convert sigma_text to integer if not empty, otherwise set a default value
@@ -280,28 +278,15 @@ class EqualizerApp(QtWidgets.QMainWindow):
                     # print( len(curr_smooth_window))
                     self.frequancy_graph.plot(signal.freq_data[0][start_ind:end_ind],
                             curr_smooth_window,pen={'color': 'r', 'width': 2})
+                    start_line = signal.freq_data[0][start_ind]
+                    end_line = signal.freq_data[0][end_ind]
                 else:
-                    v_line_pos = signal.freq_data[0][end_last_ind-1]
-                    v_line_pos_start = signal.freq_data[0][start_last_ind]
-                    windowtype = self.smoothing_window_combobox.currentText()
-                    sigma_text = self.lineEdit_2.text()
-                    if sigma_text:
-                        sigma = int(sigma_text)
-                    else:
-                        sigma = 20  # Set a default value if the text is empty
-                    amp = max(signal.freq_data[1][start_ind:end_ind])
-                    smooth_window = SmoothingWindow(windowtype,amp,sigma)     
-                    curr_smooth_window = smooth_window.apply(signal.freq_data[1][start_ind:end_ind])
-                    # print( len(signal.freq_data[0][start_ind:end_ind]))
-                    # print(len(curr_smooth_window))
-                    self.frequancy_graph.plot(signal.freq_data[0][start_last_ind:end_last_ind],
-                            curr_smooth_window,pen={'color': 'r', 'width': 2})
-                    # Add a vertical line for the starting position of the last range
-                    v_line_start = pg.InfiniteLine(pos=v_line_pos_start, angle=90, movable=False, pen=pg.mkPen('r', width=2))
-                    self.frequancy_graph.addItem(v_line_start)
+                    end_line = signal.freq_data[0][end_ind-1]
                 # Add a vertical line for the current position
-                v_line = pg.InfiniteLine(pos=v_line_pos, angle=90, movable=False, pen=pg.mkPen('r', width=2))
-                self.frequancy_graph.addItem(v_line)
+                v_line_start = pg.InfiniteLine(pos=start_line, angle=90, movable=False, pen=pg.mkPen('r', width=2))
+                self.frequancy_graph.addItem(v_line_start)
+                v_line_end = pg.InfiniteLine(pos=end_line, angle=90, movable=False, pen=pg.mkPen('r', width=2))
+                self.frequancy_graph.addItem(v_line_end)
 
     def plot_spectrogram(self, samples, sampling_rate, widget):
         # Clear the previous content of the spectrogram widget
@@ -494,11 +479,11 @@ class EqualizerApp(QtWidgets.QMainWindow):
         # complex array from amp and phase comination
         complex_value = Amp * np.exp(1j*phase)
         # taking inverse fft to get recover signal
-        recovered_signal = np.fft.ifft(complex_value)
+        recovered_signal = np.fft.irfft(complex_value)
         # taking only the real part of the signal
         # print('start',len(recovered_signal), 'end')
         # print (len(self.current_signal.time))
-        return np.real(recovered_signal)
+        return (recovered_signal)
 
     def hide(self):
         if (self.checkBox.isChecked()):

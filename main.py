@@ -1,8 +1,10 @@
 from scipy.fft import fft
+from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 import numpy as np
 import pandas as pd
 import copy
 from PyQt5.QtWidgets import QSlider,QHBoxLayout ,QLabel
+from PyQt5.QtWidgets import QSlider,QHBoxLayout ,QVBoxLayout 
 import matplotlib as plt
 import pyqtgraph as pg
 from pyqtgraph import ImageItem
@@ -19,6 +21,11 @@ import pyqtgraph as pg
 from PyQt5.QtMultimedia import QMediaPlayer, QMediaContent
 from PyQt5.QtCore import QUrl
 from scipy import signal as sg
+import scipy.io.wavfile as wav 
+from scipy.signal import spectrogram
+from pyqtgraph import GraphicsLayoutWidget
+from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+from matplotlib.figure import Figure
 
 
 
@@ -65,6 +72,7 @@ class SmoothingWindow:
 
 class CreateSlider:
     def __init__(self , index ):
+        
         # Create a slider
         self.index= index
         self.slider = QSlider()
@@ -85,6 +93,10 @@ class EqualizerApp(QtWidgets.QMainWindow):
         super(EqualizerApp, self).__init__(*args, **kwargs)
         # Load the UI Page
         uic.loadUi(r'task3.ui', self)
+        self.dictnoary_values = {}
+        self.original_graph.setBackground("#ffff")
+        self.equalized_graph.setBackground("#ffff")
+        self.frequancy_graph.setBackground("#ffff")
         self.selected_mode = 'Uniform Range'
         self.selected_window = None
         self.frame_layout = QHBoxLayout(self.sliders_frame)
@@ -188,7 +200,7 @@ class EqualizerApp(QtWidgets.QMainWindow):
         print('aho assigned yabny')
         self.eqsignal = copy.deepcopy(self.current_signal)
         self.Plot("original")
-        self.plot_spectrogram(data, sample_rate, 'before')
+        self.plot_spectrogram(data, sample_rate ,time, self.spectrogram_before)
         # Determine frequency ranges based on the selected mode
         self.Range_spliting()
         # Plot the frequency smoothing window
@@ -253,7 +265,7 @@ class EqualizerApp(QtWidgets.QMainWindow):
             self.frequancy_graph.clear()
             # Plot the original frequency data in white
             self.frequancy_graph.plot(signal.freq_data[0][:end_last_ind],
-                    signal.freq_data[1][:end_last_ind],pen={'color': 'w'})
+                    signal.freq_data[1][:end_last_ind],pen={'color': 'b'})
             # Iterate through the frequency ranges and plot smoothed windows
             for i in range(len(signal.Ranges)):
                 if i!= len(signal.Ranges) :
@@ -282,15 +294,15 @@ class EqualizerApp(QtWidgets.QMainWindow):
                 v_line_end = pg.InfiniteLine(pos=end_line, angle=90, movable=False, pen=pg.mkPen('r', width=2))
                 self.frequancy_graph.addItem(v_line_end)
 
-    def plot_spectrogram(self, samples, sampling_rate, widget):
+    def plot_spectrogram(self, samples, sampling_rate, time , widget):
         # Clear the previous content of the spectrogram widget
-        self.spectrogram_widget[widget].clear()
+        #self.spectrogram_widget[widget].clear()
         # Add a subplot to the spectrogram widget
-        spectrogram_axes = self.spectrogram_widget[widget].getPlotItem()
+        #spectrogram_axes = self.spectrogram_widget[widget].getPlotItem()
         # Convert input samples to float32
         data = samples.astype('float32')
         # Size of the Fast Fourier Transform (FFT), which will also be used as the window length
-        n_fft=1024
+        n_fft=500
         # Step or stride between windows. If the step is smaller than the window length, the windows will overlap
         hop_length=320
         # Specify the window type for FFT/STFT
@@ -308,14 +320,40 @@ class EqualizerApp(QtWidgets.QMainWindow):
         # Convert power spectrogram to decibels
         #it is the log mel spectrogram
         decibel_spectrogram = librosa.power_to_db(mel_spectrogram, ref=np.max)
+        time_axis = np.linspace(0, len(data) / sampling_rate)
+        fig = Figure()
+        fig = Figure(figsize=(3,3))
+        ax = fig.add_subplot(111)
+        ax.imshow(decibel_spectrogram, aspect='auto', cmap='viridis',extent=[time_axis[0], time_axis[-1], 0, sampling_rate / 2])
+        ax.axes.plot()
+        canvas = FigureCanvas(fig)
+        layout = QVBoxLayout()
+        layout.addWidget(canvas)
+        widget.setLayout(layout)
         # Create ImageItem for displaying the spectrogram
-        spectrogram_image = ImageItem(image=decibel_spectrogram)
+        #spectrogram_image = ImageItem(image=decibel_spectrogram)
         # Add ImageItem to the spectrogram widget
-        self.spectrogram_widget[widget].addItem(spectrogram_image)
+        #self.spectrogram_widget[widget].addItem(spectrogram_image)
         # Add colorbar to the spectrogram plot (if needed)
         # self.spectrogram_widget[widget].getFigure().colorbar(spectrogram_image, ax=spectrogram_axes, format='%+2.0f dB')
         # Redraw the spectrogram widget
-        self.spectrogram_widget[widget].draw()
+        #self.spectrogram_widget[widget].draw()
+    # def spectrogram(self, data, sampling_rate,widget):
+            
+    #         _, _, Sxx = spectrogram(data, sampling_rate)
+    #         print(Sxx.shape)
+    #         time_axis = np.linspace(0, len(data) / sampling_rate, num=Sxx.shape[1])
+    #         fig = Figure()
+    #         fig = Figure(figsize=(3,3))
+    #         ax = fig.add_subplot(111)
+    #         ax.imshow(10 * np.log10(Sxx), aspect='auto', cmap='viridis',extent=[time_axis[0], time_axis[-1], 0, sampling_rate / 2])
+    #         # ax = np.rot90(ax, k=1)
+    #         ax.invert_yaxis()
+    #         ax.axes.plot()
+    #         canvas = FigureCanvas(fig)
+    #         layout = QVBoxLayout()
+    #         layout.addWidget(canvas)
+    #         widget.setLayout(layout)
 
     def playMusic(self):
         self.changed =  True
@@ -366,30 +404,6 @@ class EqualizerApp(QtWidgets.QMainWindow):
             self.player.play()
             self.timer.start()
             self.changed = not self.changed
-
-    # def position_changed(self): 
-    #     current_time = self.player.get_time()
-    #     total_duration = self.player.get_length()
-
-    #     if total_duration != 0:
-    #         progress = current_time / total_duration
-    #         max_index = self.original_graph.getViewBox().width()
-
-    #         # Calculate the index based on the previous position
-    #         previous_position = progress * max_index/100
-    #         index = int(previous_position * self.f_rate / 1000)
-
-    #         # Ensure the index is within the bounds of the plotted signal
-    #         index = max(0, min(index, max_index))
-    #         self.line.setPos(index)
-            # Add vertical leines for start and end indices for each mode
-            # for start_ind, end_ind in signal.Ranges:
-                
-            # # Add vertical line at the end for 'Uniform Range'
-            # if self.modes_combobox.currentIndex() == 'Uniform Range' and signal.Ranges:
-            #     _, end_ind = signal.Ranges[-1]
-            #     v_line_end_uniform = pg.InfiniteLine(pos=signal.freq_data[0][end_ind], angle=90, movable=False, pen=pg.mkPen('b', width=2))
-            #     self.frequancy_graph.addItem(v_line_end_uniform)
 
     def combobox_activated(self):
         # Get the selected item's text and display it in the label

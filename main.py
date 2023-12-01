@@ -105,8 +105,8 @@ class EqualizerApp(QtWidgets.QMainWindow):
         self.current_speed = 1
         self.slider_gain = {}
         self.equalized_bool = False
-        self.time_eq_signal = Signal('timeeq')
-        
+        self.time_eq_signal = Signal('EqSignalInTime')
+        self.eqsignal = None
 
         self.line = pg.InfiniteLine(pos=0.1, angle=90, pen=None, movable=False)
         # spectooooooo
@@ -187,6 +187,8 @@ class EqualizerApp(QtWidgets.QMainWindow):
         x_data, y_data = self.get_Fourier(T, self.current_signal.data)
         self.current_signal.freq_data = [x_data, y_data]
         # self.set_slider_range()
+        print('aho assigned yabny')
+        self.eqsignal = copy.deepcopy(self.current_signal)
         self.Plot("original")
         self.plot_spectrogram(data, sample_rate, 'before')
         # Determine frequency ranges based on the selected mode
@@ -223,10 +225,11 @@ class EqualizerApp(QtWidgets.QMainWindow):
                 end_ind = bisect.bisect_right(freq, end) - 1  # Adjusted for inclusive end index
                 self.current_signal.Ranges.append((start_ind, end_ind))
                 print(self.current_signal.Ranges)
+        self.eqsignal.Ranges = copy.deepcopy(self.current_signal.Ranges)
 
 
     def Plot(self, graph):
-            signal= self.current_signal
+            signal= self.time_eq_signal if self.equalized_bool else self.current_signal
             if signal:
                 #time domain 
                 graphs = [self.original_graph, self.equalized_graph]
@@ -234,8 +237,10 @@ class EqualizerApp(QtWidgets.QMainWindow):
                 graph.clear()
                 graph.setLabel('left', "Amplitude")
                 graph.setLabel('bottom', "Time")
+                time_array = np.array(signal.time)
+                data_array = np.array(signal.data)
                 plot_item = graph.plot(
-                    signal.time, signal.data, name=f"{signal.name}")
+                    time_array, data_array, name=f"{signal.name}")
                 # Add legend to the graph
                 if graph.plotItem.legend is not None:
                     graph.plotItem.legend.clear()
@@ -244,6 +249,7 @@ class EqualizerApp(QtWidgets.QMainWindow):
 
     def plot_freq_smoothing_window (self):
         signal = self.eqsignal if self.equalized_bool  else self.current_signal
+        #print(signal.Ranges)
         if signal and signal.Ranges:  # Check if signal is not None and signal.Ranges is not empty
             start_last_ind, end_last_ind = signal.Ranges[-1]
             #print("helloooo")
@@ -460,16 +466,21 @@ class EqualizerApp(QtWidgets.QMainWindow):
     def equalized(self, slider_index,value):
         #print (value)
         self.equalized_bool = True
-        self.eqsignal = copy.deepcopy(self.current_signal) 
+        #self.eqsignal = copy.deepcopy(self.current_signal) # avoid calling by reference 
         for i in range(self.current_signal.Ranges[slider_index][0],self.current_signal.Ranges[slider_index][1]):  
             #print('before',self.current_signal.freq_data[1][i])        
             self.eqsignal.freq_data[1][i] = self.current_signal.freq_data[1][i] * value
             #print('after',self.eqsignal.freq_data[1][i], self.current_signal.freq_data[1][i])
+
+        # self.frequancy_graph.clear()
+        # self.frequancy_graph.plot(self.eqsignal.freq_data[0], self.eqsignal.freq_data[1], pen={'color': 'w'})
+
         self.plot_freq_smoothing_window()
         # self.eqsignal.phase = self.current_signal.phase
-        self.time_eq_signal = self.recovered_signal(self.eqsignal.freq_data[1], self.eqsignal.phase)
-        self.eqsignal.time = self.current_signal.time
-        self.Plot("equalized")
+        self.time_eq_signal.data= self.recovered_signal(self.eqsignal.freq_data[1], self.eqsignal.phase)[0]
+        self.time_eq_signal.time = self.current_signal.time
+
+        #self.Plot("equalized")
 
     def recovered_signal(self,Amp, phase):
         # complex array from amp and phase comination
@@ -477,6 +488,8 @@ class EqualizerApp(QtWidgets.QMainWindow):
         # taking inverse fft to get recover signal
         recovered_signal = np.fft.ifft(complex_value)
         # taking only the real part of the signal
+        # print('start',len(recovered_signal), 'end')
+        # print (len(self.current_signal.time))
         return np.real(recovered_signal)
 
     def hide(self):

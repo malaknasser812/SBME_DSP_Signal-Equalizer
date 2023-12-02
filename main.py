@@ -472,26 +472,25 @@ class EqualizerApp(QtWidgets.QMainWindow):
                 #print(slider_creator.range)
                 slider = slider_creator.get_slider()
                 self.slider_gain[i] = 10
+                key = 'Slider' + str (i+1)
+                label = QLabel(key)
                 slider.valueChanged.connect(lambda value, i=i: self.update_slider_value(i, value/10))
                 self.frame_layout.addWidget(slider) 
+                self.frame_layout.addWidget(label)
         else:
             # either musical, animal or ecg
-            self.clear_layout(self.frame_layout)
+            self.clear_layout(self.frame_layout) 
             dict_ranges = self.dict_ranges()
-
-            for i, (key, _) in enumerate(dict_ranges.items()):
-                pair_layout = QHBoxLayout()
-
-                label = QLabel(key)
-                pair_layout.addWidget(label)
-
+            # for key in dict_ranges.keys():  # Use enumerate to get both index and key
+            for i,(key,_ )in enumerate(dict_ranges.items()):
+                # print(f"Index: {i}, Key: {key}")
+                label = QLabel(key)  # Create a label with a unique identifier
                 slider_creator = CreateSlider(i)
                 slider = slider_creator.get_slider()
                 self.slider_gain[i] = 10
                 slider.valueChanged.connect(lambda value, i=i: self.update_slider_value(i, value/10))
-
-                pair_layout.addWidget(slider)
-                self.frame_layout.addLayout(pair_layout)
+                self.frame_layout.addWidget(slider)
+                self.frame_layout.addWidget(label)
                 # dict = self.dict_ranges()
                 # self.slider_gain = {i:1}
         #print (self.slider_gain)

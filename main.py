@@ -130,8 +130,10 @@ class EqualizerApp(QtWidgets.QMainWindow):
         self.smoothing_window_combobox.activated.connect(lambda: self.smoothing_window_combobox_activated())
         self.lineEdit_2.setVisible(False)  # Initially hide the line edit for Gaussian window
         self.load_btn.clicked.connect(lambda: self.load())
+        self.zoom_in_btn.clicked.connect(lambda:self.zoom_in())
+        self.zoom_out_btn.clicked.connect(lambda:self.zoom_out())
         self.hear_orig_btn.clicked.connect(lambda:self.playMusic('orig'))
-        self.hear_eq_btn.clicked.connect(lambda:self.playMusic('equalized'))
+        self.hear_eq_btn.clicked.connect(lambda:self.playMusic('equalized')) 
         #self.hear_eq_btn.clicked.connect(lambda:self.play_numpy_array())
 
         # self.hear_eq_btn.clicked.connect(lambda: self.play_equalized_audio(self.time_eq_signal.data, self.current_signal.sample_rate))
@@ -328,37 +330,13 @@ class EqualizerApp(QtWidgets.QMainWindow):
         layout.addWidget(canvas)
         widget.setLayout(layout)
 
-
-    def play_eq(self):
+    def zoom_in(self): 
+        self.original_graph.getViewBox().scaleBy((0.5, 0.5))
+        self.equalized_graph.getViewBox().scaleBy((0.5, 0.5))
         
-        data = self.time_eq_signal.data
-        sample_rate = self.current_signal.sample_rate
-        # Convert the NumPy array to bytes
-        audio_bytes = (data * 32767).astype(np.int16).tobytes()
-
-        # Create a QBuffer and write the audio data
-        self.buffer = QBuffer()
-        self.buffer.setData(audio_bytes)
-        self.buffer.open(QIODevice.ReadOnly)
-
-        # Create a QMediaPlayer and set the buffer as media content
-        self.player = QMediaPlayer()
-        self.player.setMedia(QMediaContent(), self.buffer)
-
-        # Connect signals for handling playback events
-        self.player.play()
-        print('eqplayed')
-
-
-    def playMusic2(self):
-            samples = self.time_eq_signal.data 
-            sample_rate = 1/(self.time_eq_signal.time[1] - self.time_eq_signal.time[0])
-            sd.play(samples,sample_rate) 
-            self.player.play()
-            self.player.setVolume(0) 
-            self.original_graph.removeItem(self.line)
-            self.equalized_graph.addItem(self.line)
-            self.timer.start()
+    def zoom_out(self):
+        self.original_graph.getViewBox().scaleBy((2, 2))
+        self.equalized_graph.getViewBox().scaleBy((2, 2))
 
 
 

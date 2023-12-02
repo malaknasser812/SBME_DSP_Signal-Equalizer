@@ -485,7 +485,7 @@ class EqualizerApp(QtWidgets.QMainWindow):
 
     def recovered_signal(self,Amp, phase):
         # complex array from amp and phase comination
-        Amp = Amp * len(self.current_signal.data)/2
+        Amp = Amp * len(self.current_signal.data)/2 #N/2 as we get amp from foureir by multiplying it with fraction 2/N 
         complex_value = Amp * np.exp(1j*phase)
         # taking inverse fft to get recover signal
         recovered_signal = np.fft.irfft(complex_value)

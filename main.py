@@ -130,10 +130,8 @@ class EqualizerApp(QtWidgets.QMainWindow):
         self.smoothing_window_combobox.activated.connect(lambda: self.smoothing_window_combobox_activated())
         self.lineEdit_2.setVisible(False)  # Initially hide the line edit for Gaussian window
         self.load_btn.clicked.connect(lambda: self.load())
-        self.zoom_in_btn.clicked.connect(lambda:self.zoom_in())
-        self.zoom_out_btn.clicked.connect(lambda:self.zoom_out())
         self.hear_orig_btn.clicked.connect(lambda:self.playMusic('orig'))
-        self.hear_eq_btn.clicked.connect(lambda:self.playMusic('equalized')) 
+        self.hear_eq_btn.clicked.connect(lambda:self.playMusic('equalized'))
         #self.hear_eq_btn.clicked.connect(lambda:self.play_numpy_array())
 
         # self.hear_eq_btn.clicked.connect(lambda: self.play_equalized_audio(self.time_eq_signal.data, self.current_signal.sample_rate))
@@ -302,58 +300,66 @@ class EqualizerApp(QtWidgets.QMainWindow):
                 self.frequancy_graph.addItem(v_line_end)
 
     def plot_spectrogram(self, samples, sampling_rate , widget):
-            data = samples.astype('float32')
-            # Size of the Fast Fourier Transform (FFT), which will also be used as the window length
-            n_fft=500
-            # Step or stride between windows. If the step is smaller than the window length, the windows will overlap
-            hop_length=320
-            window_type ='hann'
-
-            # Compute the short-time Fourier transform magnitude squared
-            frequency_magnitude = np.abs(librosa.stft(data, n_fft=n_fft, hop_length=hop_length, win_length=n_fft, window=window_type)) ** 2
-
-            # Compute the mel spectrogram
-            mel_spectrogram = librosa.feature.melspectrogram(S=frequency_magnitude, y=data, sr=sampling_rate, n_fft=n_fft,
-                        hop_length=hop_length, win_length=n_fft, window=window_type, n_mels =128)
-
-            # Convert power spectrogram to decibels
-            decibel_spectrogram = librosa.power_to_db(mel_spectrogram, ref=np.max)
-            time_axis = np.linspace(0, len(data) / sampling_rate)
-
-            fig = Figure()
-            fig = Figure(figsize=(3,3))
-            ax = fig.add_subplot(111)
-
-            ax.imshow(decibel_spectrogram, aspect='auto', cmap='viridis',extent=[time_axis[0], time_axis[-1], 0, sampling_rate / 2])
-            ax.axes.plot()
-            canvas = FigureCanvas(fig)
-            if widget.layout is None:
-                layout = QVBoxLayout()
-                layout.addWidget(canvas)
-                widget.setLayout(layout)
-            else:
-            # If the layout already exists, update or modify it as needed
-            # For example, you might clear the existing content and add new widgets
-                self.clear_layout(widget)
-                layout.addWidget(canvas)
-                widget.setLayout(layout)
-
-    def clear_layout(self, widget):
-        layout = widget.layout()
-        if layout is not None:
-            while layout.count():
-                item = layout.takeAt(0)
-                widget = item.widget()
-                if widget is not None:
-                    widget.deleteLater()
-
-    def zoom_in(self): 
-        self.original_graph.getViewBox().scaleBy((0.5, 0.5))
-        self.equalized_graph.getViewBox().scaleBy((0.5, 0.5))
         
-    def zoom_out(self):
-        self.original_graph.getViewBox().scaleBy((2, 2))
-        self.equalized_graph.getViewBox().scaleBy((2, 2))
+
+        data = samples.astype('float32')
+        # Size of the Fast Fourier Transform (FFT), which will also be used as the window length
+        n_fft=500
+        # Step or stride between windows. If the step is smaller than the window length, the windows will overlap
+        hop_length=320
+        window_type ='hann'
+
+        # Compute the short-time Fourier transform magnitude squared
+        frequency_magnitude = np.abs(librosa.stft(data, n_fft=n_fft, hop_length=hop_length, win_length=n_fft, window=window_type)) ** 2
+
+        # Compute the mel spectrogram
+        mel_spectrogram = librosa.feature.melspectrogram(S=frequency_magnitude, y=data, sr=sampling_rate, n_fft=n_fft,
+                    hop_length=hop_length, win_length=n_fft, window=window_type, n_mels =128)
+
+        # Convert power spectrogram to decibels
+        decibel_spectrogram = librosa.power_to_db(mel_spectrogram, ref=np.max)
+        time_axis = np.linspace(0, len(data) / sampling_rate)
+        fig = Figure()
+        fig = Figure(figsize=(3,3))
+        ax = fig.add_subplot(111)
+        ax.imshow(decibel_spectrogram, aspect='auto', cmap='viridis',extent=[time_axis[0], time_axis[-1], 0, sampling_rate / 2])
+        ax.axes.plot()
+        canvas = FigureCanvas(fig)
+        layout = QVBoxLayout()
+        layout.addWidget(canvas)
+        widget.setLayout(layout)
+
+
+    def play_eq(self):
+        
+        data = self.time_eq_signal.data
+        sample_rate = self.current_signal.sample_rate
+        # Convert the NumPy array to bytes
+        audio_bytes = (data * 32767).astype(np.int16).tobytes()
+
+        # Create a QBuffer and write the audio data
+        self.buffer = QBuffer()
+        self.buffer.setData(audio_bytes)
+        self.buffer.open(QIODevice.ReadOnly)
+
+        # Create a QMediaPlayer and set the buffer as media content
+        self.player = QMediaPlayer()
+        self.player.setMedia(QMediaContent(), self.buffer)
+
+        # Connect signals for handling playback events
+        self.player.play()
+        print('eqplayed')
+
+
+    def playMusic2(self):
+            samples = self.time_eq_signal.data 
+            sample_rate = 1/(self.time_eq_signal.time[1] - self.time_eq_signal.time[0])
+            sd.play(samples,sample_rate) 
+            self.player.play()
+            self.player.setVolume(0) 
+            self.original_graph.removeItem(self.line)
+            self.equalized_graph.addItem(self.line)
+            self.timer.start()
 
 
 
@@ -467,25 +473,26 @@ class EqualizerApp(QtWidgets.QMainWindow):
                 #print(slider_creator.range)
                 slider = slider_creator.get_slider()
                 self.slider_gain[i] = 10
-                key = 'Slider' + str (i+1)
-                label = QLabel(key)
                 slider.valueChanged.connect(lambda value, i=i: self.update_slider_value(i, value/10))
                 self.frame_layout.addWidget(slider) 
-                self.frame_layout.addWidget(label)
         else:
             # either musical, animal or ecg
-            self.clear_layout(self.frame_layout) 
+            self.clear_layout(self.frame_layout)
             dict_ranges = self.dict_ranges()
-            # for key in dict_ranges.keys():  # Use enumerate to get both index and key
-            for i,(key,_ )in enumerate(dict_ranges.items()):
-                # print(f"Index: {i}, Key: {key}")
-                label = QLabel(key)  # Create a label with a unique identifier
+
+            for i, (key, _) in enumerate(dict_ranges.items()):
+                pair_layout = QHBoxLayout()
+
+                label = QLabel(key)
+                pair_layout.addWidget(label)
+
                 slider_creator = CreateSlider(i)
                 slider = slider_creator.get_slider()
                 self.slider_gain[i] = 10
                 slider.valueChanged.connect(lambda value, i=i: self.update_slider_value(i, value/10))
-                self.frame_layout.addWidget(slider)
-                self.frame_layout.addWidget(label)
+
+                pair_layout.addWidget(slider)
+                self.frame_layout.addLayout(pair_layout)
                 # dict = self.dict_ranges()
                 # self.slider_gain = {i:1}
         #print (self.slider_gain)

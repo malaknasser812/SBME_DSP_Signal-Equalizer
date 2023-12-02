@@ -117,7 +117,7 @@ class EqualizerApp(QtWidgets.QMainWindow):
         self.equalized_bool = False
         self.time_eq_signal = Signal('EqSignalInTime')
         self.eqsignal = None
-
+        self.sampling_rate = None
         self.line = pg.InfiniteLine(pos=0.1, angle=90, pen=None, movable=False)
         # spectooooooo
         self.available_palettes = ['twilight', 'Blues', 'Greys', 'ocean', 'nipy_spectral']
@@ -191,6 +191,7 @@ class EqualizerApp(QtWidgets.QMainWindow):
         self.current_signal.data = data
         self.current_signal.time = time
         self.current_signal.sample_rate = sample_rate 
+        self.sampling_rate = sample_rate
         # Calculate and set the Fourier transform of the signal
         T = 1 / self.current_signal.sample_rate
         x_data, y_data = self.get_Fourier(T, self.current_signal.data)
@@ -198,8 +199,13 @@ class EqualizerApp(QtWidgets.QMainWindow):
         # self.set_slider_range()
         print('aho assigned yabny')
         self.Plot("original")
+        self.plot_spectrogram(data, sample_rate , self.spectrogram_before)
+        # Determine frequency ranges based on the selected mode
+        self.Range_spliting()
+        # Plot the frequency smoothing window
+        self.plot_freq_smoothing_window()
         self.eqsignal = copy.deepcopy(self.current_signal)
-        self.plot_spectrogram(data, sample_rate ,time, self.spectrogram_before)
+        
 
     def get_Fourier(self, T, data):
         N=len(data)
@@ -289,31 +295,23 @@ class EqualizerApp(QtWidgets.QMainWindow):
                 v_line_end = pg.InfiniteLine(pos=end_line, angle=90, movable=False, pen=pg.mkPen('r', width=2))
                 self.frequancy_graph.addItem(v_line_end)
 
-    def plot_spectrogram(self, samples, sampling_rate, time , widget):
-        # Clear the previous content of the spectrogram widget
-        #self.spectrogram_widget[widget].clear()
-        # Add a subplot to the spectrogram widget
-        #spectrogram_axes = self.spectrogram_widget[widget].getPlotItem()
-        # Convert input samples to float32
+    def plot_spectrogram(self, samples, sampling_rate , widget):
+
         data = samples.astype('float32')
         # Size of the Fast Fourier Transform (FFT), which will also be used as the window length
         n_fft=500
         # Step or stride between windows. If the step is smaller than the window length, the windows will overlap
         hop_length=320
-        # Specify the window type for FFT/STFT
         window_type ='hann'
 
         # Compute the short-time Fourier transform magnitude squared
-        # it calculates the spectrograme for the givven data but the scale of the y axix is not good
-        # it gives you a totally dark img so after that we convert it to the mel scale 
         frequency_magnitude = np.abs(librosa.stft(data, n_fft=n_fft, hop_length=hop_length, win_length=n_fft, window=window_type)) ** 2
 
         # Compute the mel spectrogram
         mel_spectrogram = librosa.feature.melspectrogram(S=frequency_magnitude, y=data, sr=sampling_rate, n_fft=n_fft,
                     hop_length=hop_length, win_length=n_fft, window=window_type, n_mels =128)
-        #because of mel scale is not redable we must calculate the db scale 
+
         # Convert power spectrogram to decibels
-        #it is the log mel spectrogram
         decibel_spectrogram = librosa.power_to_db(mel_spectrogram, ref=np.max)
         time_axis = np.linspace(0, len(data) / sampling_rate)
         fig = Figure()
@@ -325,30 +323,6 @@ class EqualizerApp(QtWidgets.QMainWindow):
         layout = QVBoxLayout()
         layout.addWidget(canvas)
         widget.setLayout(layout)
-        # Create ImageItem for displaying the spectrogram
-        #spectrogram_image = ImageItem(image=decibel_spectrogram)
-        # Add ImageItem to the spectrogram widget
-        #self.spectrogram_widget[widget].addItem(spectrogram_image)
-        # Add colorbar to the spectrogram plot (if needed)
-        # self.spectrogram_widget[widget].getFigure().colorbar(spectrogram_image, ax=spectrogram_axes, format='%+2.0f dB')
-        # Redraw the spectrogram widget
-        #self.spectrogram_widget[widget].draw()
-    # def spectrogram(self, data, sampling_rate,widget):
-            
-    #         _, _, Sxx = spectrogram(data, sampling_rate)
-    #         print(Sxx.shape)
-    #         time_axis = np.linspace(0, len(data) / sampling_rate, num=Sxx.shape[1])
-    #         fig = Figure()
-    #         fig = Figure(figsize=(3,3))
-    #         ax = fig.add_subplot(111)
-    #         ax.imshow(10 * np.log10(Sxx), aspect='auto', cmap='viridis',extent=[time_axis[0], time_axis[-1], 0, sampling_rate / 2])
-    #         # ax = np.rot90(ax, k=1)
-    #         ax.invert_yaxis()
-    #         ax.axes.plot()
-    #         canvas = FigureCanvas(fig)
-    #         layout = QVBoxLayout()
-    #         layout.addWidget(canvas)
-    #         widget.setLayout(layout)
 
     def playMusic(self):
         self.changed =  True
@@ -476,6 +450,9 @@ class EqualizerApp(QtWidgets.QMainWindow):
         self.eqsignal.freq_data[1][start:end] = new_amp
         self.plot_freq_smoothing_window()
         # self.eqsignal.phase = self.current_signal.phase
+        self.time_eq_signal.data= self.recovered_signal(self.eqsignal.freq_data[1], self.eqsignal.phase)[0]
+        self.time_eq_signal.time = self.current_signal.time
+        self.plot_spectrogram(self.time_eq_signal.data, self.sampling_rate , self.spectrogram_after)
         self.time_eq_signal.data = self.recovered_signal(self.eqsignal.freq_data[1], self.current_signal.phase)
         print(len(self.time_eq_signal.data))
         print(len(self.time_eq_signal.time))

@@ -205,9 +205,9 @@ class EqualizerApp(QtWidgets.QMainWindow):
         self.Plot("original")
         self.plot_spectrogram(data, sample_rate , self.spectrogram_before)
         # Determine frequency ranges based on the selected mode
-        self.Range_spliting()
+        #self.Range_spliting()
         # Plot the frequency smoothing window
-        self.plot_freq_smoothing_window()
+        #self.plot_freq_smoothing_window()
         self.eqsignal = copy.deepcopy(self.current_signal)
         
 
@@ -239,7 +239,7 @@ class EqualizerApp(QtWidgets.QMainWindow):
                 end_ind = bisect.bisect_right(freq, end) - 1  # Adjusted for inclusive end index
                 self.current_signal.Ranges.append((start_ind, end_ind))
                 #print(self.current_signal.Ranges)
-        self.eqsignal.Ranges = copy.deepcopy(self.current_signal.Ranges)
+        #self.eqsignal.Ranges = copy.deepcopy(self.current_signal.Ranges)
 
     def Plot(self, graph):
             signal= self.time_eq_signal if self.equalized_bool else self.current_signal
@@ -476,20 +476,22 @@ class EqualizerApp(QtWidgets.QMainWindow):
                 self.frame_layout.addWidget(slider) 
         else:
             # either musical, animal or ecg
-            self.frame_layout = QVBoxLayout()
-            self.setLayout(self.frame_layout)
-            self.clear_layout(self.frame_layout) 
+            self.clear_layout(self.frame_layout)
             dict_ranges = self.dict_ranges()
-            # for key in dict_ranges.keys():  # Use enumerate to get both index and key
-            for i,(key,_ )in enumerate(dict_ranges.items()):
-                # print(f"Index: {i}, Key: {key}")
-                label = QLabel(key)  # Create a label with a unique identifier
-                self.frame_layout.addWidget(label)
+
+            for i, (key, _) in enumerate(dict_ranges.items()):
+                pair_layout = QHBoxLayout()
+
+                label = QLabel(key)
+                pair_layout.addWidget(label)
+
                 slider_creator = CreateSlider(i)
                 slider = slider_creator.get_slider()
                 self.slider_gain[i] = 10
                 slider.valueChanged.connect(lambda value, i=i: self.update_slider_value(i, value/10))
-                self.frame_layout.addWidget(slider)
+
+                pair_layout.addWidget(slider)
+                self.frame_layout.addLayout(pair_layout)
                 # dict = self.dict_ranges()
                 # self.slider_gain = {i:1}
         #print (self.slider_gain)
@@ -523,14 +525,13 @@ class EqualizerApp(QtWidgets.QMainWindow):
         # self.eqsignal.phase = self.current_signal.phase
         self.time_eq_signal.data= self.recovered_signal(self.eqsignal.freq_data[1], self.eqsignal.phase)[0]
         self.time_eq_signal.time = self.current_signal.time
-        self.plot_spectrogram(self.time_eq_signal.data, self.sampling_rate , self.spectrogram_after)
         self.time_eq_signal.data = self.recovered_signal(self.eqsignal.freq_data[1], self.current_signal.phase)
         #print(len(self.time_eq_signal.data))
         #print(len(self.time_eq_signal.time))
         excess = len(self.time_eq_signal.time)-len(self.time_eq_signal.data)
         self.time_eq_signal.time = self.time_eq_signal.time[:-excess]
         self.Plot("equalized")
-        self.plot_spectrogram(self.time_eq_signal.data, self.current_signal.sample_rate ,self.current_signal.time, self.spectrogram_after)
+        self.plot_spectrogram(self.time_eq_signal.data, self.current_signal.sample_rate , self.spectrogram_after)
 
 
     def recovered_signal(self,Amp, phase):

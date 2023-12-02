@@ -302,33 +302,50 @@ class EqualizerApp(QtWidgets.QMainWindow):
                 self.frequancy_graph.addItem(v_line_end)
 
     def plot_spectrogram(self, samples, sampling_rate , widget):
+            data = samples.astype('float32')
+            # Size of the Fast Fourier Transform (FFT), which will also be used as the window length
+            n_fft=500
+            # Step or stride between windows. If the step is smaller than the window length, the windows will overlap
+            hop_length=320
+            window_type ='hann'
 
-        data = samples.astype('float32')
-        # Size of the Fast Fourier Transform (FFT), which will also be used as the window length
-        n_fft=500
-        # Step or stride between windows. If the step is smaller than the window length, the windows will overlap
-        hop_length=320
-        window_type ='hann'
+            # Compute the short-time Fourier transform magnitude squared
+            frequency_magnitude = np.abs(librosa.stft(data, n_fft=n_fft, hop_length=hop_length, win_length=n_fft, window=window_type)) ** 2
 
-        # Compute the short-time Fourier transform magnitude squared
-        frequency_magnitude = np.abs(librosa.stft(data, n_fft=n_fft, hop_length=hop_length, win_length=n_fft, window=window_type)) ** 2
+            # Compute the mel spectrogram
+            mel_spectrogram = librosa.feature.melspectrogram(S=frequency_magnitude, y=data, sr=sampling_rate, n_fft=n_fft,
+                        hop_length=hop_length, win_length=n_fft, window=window_type, n_mels =128)
 
-        # Compute the mel spectrogram
-        mel_spectrogram = librosa.feature.melspectrogram(S=frequency_magnitude, y=data, sr=sampling_rate, n_fft=n_fft,
-                    hop_length=hop_length, win_length=n_fft, window=window_type, n_mels =128)
+            # Convert power spectrogram to decibels
+            decibel_spectrogram = librosa.power_to_db(mel_spectrogram, ref=np.max)
+            time_axis = np.linspace(0, len(data) / sampling_rate)
 
-        # Convert power spectrogram to decibels
-        decibel_spectrogram = librosa.power_to_db(mel_spectrogram, ref=np.max)
-        time_axis = np.linspace(0, len(data) / sampling_rate)
-        fig = Figure()
-        fig = Figure(figsize=(3,3))
-        ax = fig.add_subplot(111)
-        ax.imshow(decibel_spectrogram, aspect='auto', cmap='viridis',extent=[time_axis[0], time_axis[-1], 0, sampling_rate / 2])
-        ax.axes.plot()
-        canvas = FigureCanvas(fig)
-        layout = QVBoxLayout()
-        layout.addWidget(canvas)
-        widget.setLayout(layout)
+            fig = Figure()
+            fig = Figure(figsize=(3,3))
+            ax = fig.add_subplot(111)
+
+            ax.imshow(decibel_spectrogram, aspect='auto', cmap='viridis',extent=[time_axis[0], time_axis[-1], 0, sampling_rate / 2])
+            ax.axes.plot()
+            canvas = FigureCanvas(fig)
+            if widget.layout is None:
+                layout = QVBoxLayout()
+                layout.addWidget(canvas)
+                widget.setLayout(layout)
+            else:
+            # If the layout already exists, update or modify it as needed
+            # For example, you might clear the existing content and add new widgets
+                self.clear_layout(widget)
+                layout.addWidget(canvas)
+                widget.setLayout(layout)
+
+    def clear_layout(self, widget):
+        layout = widget.layout()
+        if layout is not None:
+            while layout.count():
+                item = layout.takeAt(0)
+                widget = item.widget()
+                if widget is not None:
+                    widget.deleteLater()
 
     def zoom_in(self): 
         self.original_graph.getViewBox().scaleBy((0.5, 0.5))

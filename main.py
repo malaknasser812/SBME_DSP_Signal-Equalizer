@@ -123,6 +123,8 @@ class EqualizerApp(QtWidgets.QMainWindow):
         self.apply_btn.clicked.connect(lambda: self.plot_freq_smoothing_window())
         self.play_pause_btn.clicked.connect(lambda: self.play_pause()) 
         #self.replay_btn.clicked.connect(lambda: self.playMusic())
+        self.zoom_in_btn.clicked.connect(lambda: self.zoom_in())
+        self.zoom_out_btn.clicked.connect(lambda: self.zoom_out())
         self.speed_up_btn.clicked.connect(lambda: self.speed_up()) 
         self.speed_down_btn.clicked.connect(lambda: self.speed_down())  
         self.checkBox.stateChanged.connect(lambda : self.hide())
@@ -435,6 +437,19 @@ class EqualizerApp(QtWidgets.QMainWindow):
         #print (self.slider_gain)
         self.equalized(slider_index, value)
         #self.Plot('equalized')
+
+    def zoom_in(self):
+        self.original_graph.getViewBox().scaleBy((0.5, 0.5))
+        self.equalized_graph.getViewBox().scaleBy((0.5, 0.5))
+        print('zoomed in')
+       
+
+    def zoom_out(self):
+        self.original_graph.getViewBox().scaleBy((2, 2))
+        self.equalized_graph.getViewBox().scaleBy((2, 2))
+        print('zoomed out')
+
+    
 
     def equalized(self, slider_index,value):
         #print (value)

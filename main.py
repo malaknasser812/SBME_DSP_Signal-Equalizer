@@ -122,7 +122,7 @@ class EqualizerApp(QtWidgets.QMainWindow):
         self.hear_eq_btn.clicked.connect(lambda:self.playMusic('equalized'))
         self.apply_btn.clicked.connect(lambda: self.plot_freq_smoothing_window())
         self.play_pause_btn.clicked.connect(lambda: self.play_pause()) 
-        #self.replay_btn.clicked.connect(lambda: self.playMusic())
+        self.replay_btn.clicked.connect(lambda: self.replay())
         self.zoom_in_btn.clicked.connect(lambda: self.zoom_in())
         self.zoom_out_btn.clicked.connect(lambda: self.zoom_out())
         self.speed_up_btn.clicked.connect(lambda: self.speed_up()) 
@@ -312,6 +312,11 @@ class EqualizerApp(QtWidgets.QMainWindow):
         canvas = FigureCanvas(fig)
         widget.addWidget(canvas)
 
+    def replay (self):
+        if self.type == 'orig':
+            self.playMusic('orig')
+        else: self.playMusic('equalized')
+
     def playMusic(self, type):
         self.current_speed = 1
         self.line_position = 0
@@ -319,6 +324,7 @@ class EqualizerApp(QtWidgets.QMainWindow):
         media = QMediaContent(QUrl.fromLocalFile(self.audio_data))
         # Set the media content for the player and start playing
         self.player.setMedia(media)
+        self.type = type
         if type == 'orig':
             sd.stop()
             self.timer.stop()

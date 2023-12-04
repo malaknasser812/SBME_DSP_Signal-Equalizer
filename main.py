@@ -1,4 +1,3 @@
-#ahoooooooooo ya farah 
 from scipy.fft import fft
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 import numpy as np

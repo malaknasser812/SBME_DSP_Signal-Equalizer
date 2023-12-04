@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>1145</width>
-    <height>965</height>
+    <height>969</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -654,7 +654,7 @@ color:#34455e;
 ;</string>
               </property>
               <property name="text">
-               <string>Original plot </string>
+               <string>Original plot    </string>
               </property>
              </widget>
             </item>
@@ -880,19 +880,30 @@ color:#34455e;
              </widget>
             </item>
             <item>
-             <widget class="QWidget" name="spectrogram_before" native="true">
+             <widget class="QFrame" name="specto_frame_before">
               <property name="minimumSize">
                <size>
-                <width>600</width>
+                <width>430</width>
                 <height>0</height>
                </size>
               </property>
               <property name="maximumSize">
                <size>
-                <width>600</width>
+                <width>430</width>
                 <height>16777215</height>
                </size>
               </property>
+              <property name="frameShape">
+               <enum>QFrame::StyledPanel</enum>
+              </property>
+              <property name="frameShadow">
+               <enum>QFrame::Raised</enum>
+              </property>
+              <layout class="QVBoxLayout" name="verticalLayout_16">
+               <item>
+                <layout class="QVBoxLayout" name="spectrogram_before"/>
+               </item>
+              </layout>
              </widget>
             </item>
            </layout>
@@ -984,25 +995,30 @@ color:#34455e;
              </widget>
             </item>
             <item>
-             <widget class="QWidget" name="spectrogram_after" native="true">
+             <widget class="QFrame" name="specto_frame_after">
               <property name="minimumSize">
                <size>
-                <width>600</width>
+                <width>430</width>
                 <height>0</height>
                </size>
               </property>
               <property name="maximumSize">
                <size>
-                <width>600</width>
+                <width>430</width>
                 <height>16777215</height>
                </size>
               </property>
-              <property name="sizeIncrement">
-               <size>
-                <width>200</width>
-                <height>0</height>
-               </size>
+              <property name="frameShape">
+               <enum>QFrame::StyledPanel</enum>
               </property>
+              <property name="frameShadow">
+               <enum>QFrame::Raised</enum>
+              </property>
+              <layout class="QVBoxLayout" name="verticalLayout_17">
+               <item>
+                <layout class="QVBoxLayout" name="spectrogram_after"/>
+               </item>
+              </layout>
              </widget>
             </item>
            </layout>

@@ -1,3 +1,4 @@
+#ahoooooooooo ya farah 
 from scipy.fft import fft
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 import numpy as np
@@ -459,7 +460,6 @@ class EqualizerApp(QtWidgets.QMainWindow):
         # Convert sigma_text to integer if not empty, otherwise set a default value
         sigma_text = self.lineEdit_2.text()
         sigma = int(sigma_text) if sigma_text else 20  # Set a default value if the text is empty
-        # amp = value
         start,end = self.current_signal.Ranges[slider_index]
         # Apply the smoothing window
         smooth_window = SmoothingWindow(windowtype,1,sigma)

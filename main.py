@@ -108,6 +108,7 @@ class EqualizerApp(QtWidgets.QMainWindow):
         self.time_eq_signal = Signal('EqSignalInTime')
         self.eqsignal = None
         self.sampling_rate = None
+        self.loaded = False
         self.line = pg.InfiniteLine(pos=0.1, angle=90, pen=None, movable=False)
         # spectooooooo
         self.available_palettes = ['twilight', 'Blues', 'Greys', 'ocean', 'nipy_spectral']
@@ -193,8 +194,10 @@ class EqualizerApp(QtWidgets.QMainWindow):
         self.Plot("original")
         self.plot_spectrogram(data, sample_rate , self.spectrogram_before)
         self.eqsignal = copy.deepcopy(self.current_signal)
-        selected_index = self.modes_combobox.currentIndex()
-        self.add_slider(selected_index)
+        if self.loaded:
+            selected_index = self.modes_combobox.currentIndex()
+            self.add_slider(selected_index)
+        self.loaded = True
 
     def get_Fourier(self, T, data):
         N=len(data)

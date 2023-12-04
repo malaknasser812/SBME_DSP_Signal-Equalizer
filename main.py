@@ -193,6 +193,8 @@ class EqualizerApp(QtWidgets.QMainWindow):
         self.Plot("original")
         self.plot_spectrogram(data, sample_rate , self.spectrogram_before)
         self.eqsignal = copy.deepcopy(self.current_signal)
+        selected_index = self.modes_combobox.currentIndex()
+        self.add_slider(selected_index)
 
     def get_Fourier(self, T, data):
         N=len(data)
@@ -391,6 +393,8 @@ class EqualizerApp(QtWidgets.QMainWindow):
         self.add_slider(selected_index)
         self.Range_spliting()
 
+
+
     def smoothing_window_combobox_activated(self):
         selected_item = self.smoothing_window_combobox.currentText()
         self.selected_window = selected_item
@@ -403,7 +407,7 @@ class EqualizerApp(QtWidgets.QMainWindow):
             if item.widget():
                 item.widget().deleteLater() 
 
-    def add_slider(self , selected_index):          
+    def add_slider(self, selected_index):          
         if selected_index == 0: #uniform range
             self.clear_layout(self.frame_layout)
             for i in range(10):

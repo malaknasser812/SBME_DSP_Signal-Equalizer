@@ -4,7 +4,7 @@ from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 import numpy as np
 import pandas as pd
 import copy
-from PyQt5.QtWidgets import QSlider,QHBoxLayout ,QVBoxLayout, QLabel
+from PyQt5.QtWidgets import QSlider,QHBoxLayout , QLabel
 import matplotlib as plt
 import pyqtgraph as pg
 from PyQt5 import QtWidgets, QtCore, uic 
@@ -17,7 +17,6 @@ import librosa
 import bisect
 import pyqtgraph as pg
 from scipy import signal as sg
-from scipy.signal import spectrogram
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 import sounddevice as sd
@@ -157,7 +156,7 @@ class EqualizerApp(QtWidgets.QMainWindow):
         path_info = QtWidgets.QFileDialog.getOpenFileName(
             None, "Select a signal...",os.getenv('HOME'), filter="Raw Data (*.csv *.wav *.mp3)")
         path = path_info[0]
-        print(path)
+        # print(path)
         time = []
         self.equalized_bool = False
         sample_rate = 0
@@ -216,13 +215,13 @@ class EqualizerApp(QtWidgets.QMainWindow):
             #print (self.current_signal.Ranges)
         else:
             freq = self.current_signal.freq_data[0] #index zero for values of freq
-            print(dictnoary_values.items())
+            # print(dictnoary_values.items())
             # Calculate frequency indices for specified ranges
             for _,(start,end) in dictnoary_values.items():
                 start_ind = bisect.bisect_left(freq, start)
                 end_ind = bisect.bisect_right(freq, end) - 1  # Adjusted for inclusive end index
                 self.current_signal.Ranges.append((start_ind, end_ind))
-                print(self.current_signal.Ranges)
+                # print(self.current_signal.Ranges)
         self.eqsignal.Ranges = copy.deepcopy(self.current_signal.Ranges)
 
     def Plot(self, graph):
@@ -236,7 +235,7 @@ class EqualizerApp(QtWidgets.QMainWindow):
                     self.frequancy_graph.clear()
                     if self.spectrogram_after.count() > 0:
                     # If yes, remove the existing canvas
-                       self.spectrogram_after.itemAt(0).widget().setParent(None)
+                        self.spectrogram_after.itemAt(0).widget().setParent(None)
                 else :
                     graph = graphs[1]                
                 graph.clear()
@@ -286,31 +285,6 @@ class EqualizerApp(QtWidgets.QMainWindow):
                 v_line_end = pg.InfiniteLine(pos=end_line, angle=90, movable=False, pen=pg.mkPen('r', width=2))
                 self.frequancy_graph.addItem(v_line_end)
 
-    # def plot_spectrogram(self, samples, sampling_rate , widget):
-    #     data = samples.astype('float32')
-    #     # Size of the Fast Fourier Transform (FFT), which will also be used as the window length
-    #     n_fft=500
-    #     # Step or stride between windows. If the step is smaller than the window length, the windows will overlap
-    #     hop_length=320
-    #     window_type ='hann'
-    #     # Compute the short-time Fourier transform magnitude squared
-    #     frequency_magnitude = np.abs(librosa.stft(data, n_fft=n_fft, hop_length=hop_length, win_length=n_fft, window=window_type)) ** 2
-    #     # Compute the mel spectrogram
-    #     mel_spectrogram = librosa.feature.melspectrogram(S=frequency_magnitude, y=data, sr=sampling_rate, n_fft=n_fft,
-    #                 hop_length=hop_length, win_length=n_fft, window=window_type, n_mels =128)
-    #     # Convert power spectrogram to decibels
-    #     decibel_spectrogram = librosa.power_to_db(mel_spectrogram, ref=np.max)
-    #     time_axis = np.linspace(0, len(data) / sampling_rate)
-    #     fig = Figure()
-    #     fig = Figure(figsize=(3,3))
-    #     ax = fig.add_subplot(111)
-    #     ax.imshow(decibel_spectrogram, aspect='auto', cmap='viridis',extent=[time_axis[0], time_axis[-1], 0, sampling_rate / 2])
-    #     ax.axes.plot()
-    #     canvas = FigureCanvas(fig)
-    #     layout = QVBoxLayout()
-    #     layout.addWidget(canvas)
-    #     widget.setLayout(layout)
-
     def plot_spectrogram(self, samples, sampling_rate , widget):
         if widget.count() > 0:
             # If yes, remove the existing canvas
@@ -336,7 +310,6 @@ class EqualizerApp(QtWidgets.QMainWindow):
         ax.axes.plot()
         canvas = FigureCanvas(fig)
         widget.addWidget(canvas)
-
 
     def playMusic(self, type):
         self.current_speed = 1
@@ -381,9 +354,6 @@ class EqualizerApp(QtWidgets.QMainWindow):
             if self.line_position > max_x:
                 self.line_position = max_x
             self.line_position = position
-            # max_x = graph.getViewBox().viewRange()[0][1]
-            # if self.line_position > max_x:
-            #     self.line_position = max_x -0.052
             self.line.setPos(self.line_position)
         
     def speed_up(self):
@@ -503,18 +473,6 @@ class EqualizerApp(QtWidgets.QMainWindow):
         recovered_signal = np.fft.irfft(complex_value)
         # taking only the real part of the signal
         return (recovered_signal)
-
-    # def hide(self):
-        # if (self.checkBox.isChecked()):
-        #     self.spectrogram_before.hide()
-        #     self.label_3.setVisible(False)
-        #     self.spectrogram_after.hide()
-        #     self.label_4.setVisible(False)
-        # else:
-        #     self.spectrogram_before.show()
-        #     self.label_3.setVisible(True)
-        #     self.spectrogram_after.show()
-        #     self.label_4.setVisible(True)
     
     def hide(self):
         if (self.checkBox.isChecked()):

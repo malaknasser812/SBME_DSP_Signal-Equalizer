@@ -160,6 +160,7 @@ class EqualizerApp(QtWidgets.QMainWindow):
         path = path_info[0]
         print(path)
         time = []
+        self.equalized_bool = False
         sample_rate = 0
         data = []
         signal_name = path.split('/')[-1].split('.')[0]   # Extract signal name from file path
@@ -306,21 +307,6 @@ class EqualizerApp(QtWidgets.QMainWindow):
         layout.addWidget(canvas)
         widget.setLayout(layout)
 
-    def play_eq(self):
-        data = self.time_eq_signal.data
-        sample_rate = self.current_signal.sample_rate
-        # Convert the NumPy array to bytes
-        audio_bytes = (data * 32767).astype(np.int16).tobytes()
-        # Create a QBuffer and write the audio data
-        self.buffer = QBuffer()
-        self.buffer.setData(audio_bytes)
-        self.buffer.open(QIODevice.ReadOnly)
-        # Create a QMediaPlayer and set the buffer as media content
-        self.player = QMediaPlayer()
-        self.player.setMedia(QMediaContent(), self.buffer)
-        # Connect signals for handling playback events
-        self.player.play()
-        print('eqplayed')
 
     def playMusic(self, type):
         self.current_speed = 1

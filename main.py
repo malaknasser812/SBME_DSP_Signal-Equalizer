@@ -232,6 +232,9 @@ class EqualizerApp(QtWidgets.QMainWindow):
                     graph = graphs[0]
                     graphs[1].clear()
                     self.frequancy_graph.clear()
+                    # Plot the original frequency data in white
+                    self.frequancy_graph.plot(signal.freq_data[0],
+                            signal.freq_data[1],pen={'color': 'b'})
                     if self.spectrogram_after.count() > 0:
                     # If yes, remove the existing canvas
                         self.spectrogram_after.itemAt(0).widget().setParent(None)

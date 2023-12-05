@@ -3,12 +3,12 @@ from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 import numpy as np
 import pandas as pd
 import copy
-from PyQt5.QtWidgets import QSlider,QHBoxLayout ,QVBoxLayout, QLabel
+from PyQt5.QtWidgets import QSlider,QHBoxLayout , QLabel
 import matplotlib as plt
 import pyqtgraph as pg
 from PyQt5 import QtWidgets, QtCore, uic 
 from PyQt5.QtMultimedia import QMediaPlayer, QMediaContent
-from PyQt5.QtCore import QUrl, QTimer, QIODevice, QBuffer
+from PyQt5.QtCore import QUrl, QTimer
 import os
 import sys
 plt.use('Qt5Agg')
@@ -16,7 +16,6 @@ import librosa
 import bisect
 import pyqtgraph as pg
 from scipy import signal as sg
-from scipy.signal import spectrogram
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 import sounddevice as sd
@@ -62,7 +61,6 @@ class SmoothingWindow:
 
 class CreateSlider:
     def __init__(self , index ):
-        
         # Create a slider
         self.index= index
         self.slider = QSlider()
@@ -124,7 +122,9 @@ class EqualizerApp(QtWidgets.QMainWindow):
         self.hear_eq_btn.clicked.connect(lambda:self.playMusic('equalized'))
         self.apply_btn.clicked.connect(lambda: self.plot_freq_smoothing_window())
         self.play_pause_btn.clicked.connect(lambda: self.play_pause()) 
-        #self.replay_btn.clicked.connect(lambda: self.playMusic())
+        self.replay_btn.clicked.connect(lambda: self.replay())
+        self.zoom_in_btn.clicked.connect(lambda: self.zoom_in())
+        self.zoom_out_btn.clicked.connect(lambda: self.zoom_out())
         self.speed_up_btn.clicked.connect(lambda: self.speed_up()) 
         self.speed_down_btn.clicked.connect(lambda: self.speed_down())  
         self.checkBox.stateChanged.connect(lambda : self.hide())
@@ -157,8 +157,9 @@ class EqualizerApp(QtWidgets.QMainWindow):
         path_info = QtWidgets.QFileDialog.getOpenFileName(
             None, "Select a signal...",os.getenv('HOME'), filter="Raw Data (*.csv *.wav *.mp3)")
         path = path_info[0]
-        print(path)
+        # print(path)
         time = []
+        self.equalized_bool = False
         sample_rate = 0
         data = []
         signal_name = path.split('/')[-1].split('.')[0]   # Extract signal name from file path
@@ -191,6 +192,8 @@ class EqualizerApp(QtWidgets.QMainWindow):
         self.Plot("original")
         self.plot_spectrogram(data, sample_rate , self.spectrogram_before)
         self.eqsignal = copy.deepcopy(self.current_signal)
+        selected_index = None
+        self.add_slider(selected_index)
 
     def get_Fourier(self, T, data):
         N=len(data)
@@ -213,13 +216,13 @@ class EqualizerApp(QtWidgets.QMainWindow):
             #print (self.current_signal.Ranges)
         else:
             freq = self.current_signal.freq_data[0] #index zero for values of freq
-            print(dictnoary_values.items())
+            # print(dictnoary_values.items())
             # Calculate frequency indices for specified ranges
             for _,(start,end) in dictnoary_values.items():
                 start_ind = bisect.bisect_left(freq, start)
                 end_ind = bisect.bisect_right(freq, end) - 1  # Adjusted for inclusive end index
                 self.current_signal.Ranges.append((start_ind, end_ind))
-                print(self.current_signal.Ranges)
+                # print(self.current_signal.Ranges)
         self.eqsignal.Ranges = copy.deepcopy(self.current_signal.Ranges)
 
     def Plot(self, graph):
@@ -231,6 +234,9 @@ class EqualizerApp(QtWidgets.QMainWindow):
                     graph = graphs[0]
                     graphs[1].clear()
                     self.frequancy_graph.clear()
+                    if self.spectrogram_after.count() > 0:
+                    # If yes, remove the existing canvas
+                        self.spectrogram_after.itemAt(0).widget().setParent(None)
                 else :
                     graph = graphs[1]                
                 graph.clear()
@@ -281,6 +287,9 @@ class EqualizerApp(QtWidgets.QMainWindow):
                 self.frequancy_graph.addItem(v_line_end)
 
     def plot_spectrogram(self, samples, sampling_rate , widget):
+        if widget.count() > 0:
+            # If yes, remove the existing canvas
+            widget.itemAt(0).widget().setParent(None)
         data = samples.astype('float32')
         # Size of the Fast Fourier Transform (FFT), which will also be used as the window length
         n_fft=500
@@ -301,25 +310,12 @@ class EqualizerApp(QtWidgets.QMainWindow):
         ax.imshow(decibel_spectrogram, aspect='auto', cmap='viridis',extent=[time_axis[0], time_axis[-1], 0, sampling_rate / 2])
         ax.axes.plot()
         canvas = FigureCanvas(fig)
-        layout = QVBoxLayout()
-        layout.addWidget(canvas)
-        widget.setLayout(layout)
+        widget.addWidget(canvas)
 
-    def play_eq(self):
-        data = self.time_eq_signal.data
-        sample_rate = self.current_signal.sample_rate
-        # Convert the NumPy array to bytes
-        audio_bytes = (data * 32767).astype(np.int16).tobytes()
-        # Create a QBuffer and write the audio data
-        self.buffer = QBuffer()
-        self.buffer.setData(audio_bytes)
-        self.buffer.open(QIODevice.ReadOnly)
-        # Create a QMediaPlayer and set the buffer as media content
-        self.player = QMediaPlayer()
-        self.player.setMedia(QMediaContent(), self.buffer)
-        # Connect signals for handling playback events
-        self.player.play()
-        print('eqplayed')
+    def replay (self):
+        if self.type == 'orig':
+            self.playMusic('orig')
+        else: self.playMusic('equalized')
 
     def playMusic(self, type):
         self.current_speed = 1
@@ -328,6 +324,7 @@ class EqualizerApp(QtWidgets.QMainWindow):
         media = QMediaContent(QUrl.fromLocalFile(self.audio_data))
         # Set the media content for the player and start playing
         self.player.setMedia(media)
+        self.type = type
         if type == 'orig':
             sd.stop()
             self.timer.stop()
@@ -364,9 +361,6 @@ class EqualizerApp(QtWidgets.QMainWindow):
             if self.line_position > max_x:
                 self.line_position = max_x
             self.line_position = position
-            # max_x = graph.getViewBox().viewRange()[0][1]
-            # if self.line_position > max_x:
-            #     self.line_position = max_x -0.052
             self.line.setPos(self.line_position)
         
     def speed_up(self):
@@ -416,7 +410,7 @@ class EqualizerApp(QtWidgets.QMainWindow):
             if item.widget():
                 item.widget().deleteLater() 
 
-    def add_slider(self , selected_index):          
+    def add_slider(self, selected_index):          
         if selected_index == 0: #uniform range
             self.clear_layout(self.frame_layout)
             for i in range(10):
@@ -450,6 +444,19 @@ class EqualizerApp(QtWidgets.QMainWindow):
         self.equalized(slider_index, value)
         #self.Plot('equalized')
 
+    def zoom_in(self):
+        self.original_graph.getViewBox().scaleBy((0.5, 0.5))
+        self.equalized_graph.getViewBox().scaleBy((0.5, 0.5))
+        print('zoomed in')
+       
+
+    def zoom_out(self):
+        self.original_graph.getViewBox().scaleBy((2, 2))
+        self.equalized_graph.getViewBox().scaleBy((2, 2))
+        print('zoomed out')
+
+    
+
     def equalized(self, slider_index,value):
         #print (value)
         self.equalized_bool = True
@@ -459,7 +466,6 @@ class EqualizerApp(QtWidgets.QMainWindow):
         # Convert sigma_text to integer if not empty, otherwise set a default value
         sigma_text = self.lineEdit_2.text()
         sigma = int(sigma_text) if sigma_text else 20  # Set a default value if the text is empty
-        # amp = value
         start,end = self.current_signal.Ranges[slider_index]
         # Apply the smoothing window
         smooth_window = SmoothingWindow(windowtype,1,sigma)
@@ -487,17 +493,17 @@ class EqualizerApp(QtWidgets.QMainWindow):
         recovered_signal = np.fft.irfft(complex_value)
         # taking only the real part of the signal
         return (recovered_signal)
-
+    
     def hide(self):
         if (self.checkBox.isChecked()):
-            self.spectrogram_before.hide()
+            self.specto_frame_before.hide()
             self.label_3.setVisible(False)
-            self.spectrogram_after.hide()
+            self.specto_frame_after.hide()
             self.label_4.setVisible(False)
         else:
-            self.spectrogram_before.show()
+            self.specto_frame_before.show()
             self.label_3.setVisible(True)
-            self.spectrogram_after.show()
+            self.specto_frame_after.show()
             self.label_4.setVisible(True)
     
 def main():

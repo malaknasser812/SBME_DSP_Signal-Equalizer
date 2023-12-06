@@ -176,7 +176,7 @@ class EqualizerApp(QtWidgets.QMainWindow):
             time = np.array(data_of_signal.iloc[:,0].astype(float).tolist())
             data = np.array(data_of_signal.iloc[:,1].astype(float).tolist())
             if len(time) > 1:
-                sample_rate = 1 /time[1]-time[0]
+                sample_rate = 1 /( time[1]-time[0])
             else:
                 sample_rate=1
         # Create a Signal object and set its attributes
@@ -342,7 +342,7 @@ class EqualizerApp(QtWidgets.QMainWindow):
             self.changed_orig = False
             self.timer.start()
             self.player.play()
-            self.player.setVolume(2)
+            self.player.setVolume(0)
             self.original_graph.removeItem(self.line)
             self.equalized_graph.addItem(self.line)
             sd.play(self.time_eq_signal.data, self.current_signal.sample_rate, blocking=False)

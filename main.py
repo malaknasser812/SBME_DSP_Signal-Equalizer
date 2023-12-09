@@ -129,10 +129,10 @@ class EqualizerApp(QtWidgets.QMainWindow):
         self.checkBox.stateChanged.connect(lambda : self.hide())
         self.dictionary = {
             'Uniform Range':{},
-            'Musical Instruments': {"Guitar": [80,400],
+            'Musical Instruments': {"Guitar": [40,400],
                                 "Flute": [400, 800],
                                 "Violin ": [950, 4000],
-                                "Xylophone": [4000, 14000]
+                                "Xylophone": [5000, 14000]
                                 },
             "Animal Sounds":{"Dog": [0, 450],
                                 "Wolf": [450, 1100],
@@ -189,11 +189,11 @@ class EqualizerApp(QtWidgets.QMainWindow):
             self.dictionary['Uniform Range'][i] = [i*self.batch_size,(i+1)*self.batch_size]  
         # selected_index = None
         # self.add_slider(selected_index)
-        self.Plot("original")
         self.frequancy_graph.clear()
-        if self.spectrogram_after.count() > 0:
-            # If yes, remove the existing canvas
-            self.spectrogram_after.itemAt(0).widget().setParent(None)
+        # if self.spectrogram_after.count() > 0:
+        #     # If yes, remove the existing canvas
+        #     self.spectrogram_after.itemAt(0).widget().setParent(None)
+        self.Plot("original")
         self.plot_spectrogram(data, sample_rate , self.spectrogram_before)
         self.eqsignal = copy.deepcopy(self.current_signal)
 
@@ -237,6 +237,8 @@ class EqualizerApp(QtWidgets.QMainWindow):
                     graph.plotItem.legend.clear()
                 legend = graph.addLegend()
                 legend.addItem(plot_item, name=f"{signal.name}")
+                self.frequancy_graph.plot(signal.freq_data[0],
+                    signal.freq_data[1],pen={'color': 'b'})
 
     def plot_freq_smoothing_window (self):
         signal = self.eqsignal if self.equalized_bool  else self.current_signal

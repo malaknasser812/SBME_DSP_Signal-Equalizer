@@ -190,11 +190,13 @@ class EqualizerApp(QtWidgets.QMainWindow):
         # selected_index = None
         # self.add_slider(selected_index)
         self.frequancy_graph.clear()
-        # if self.spectrogram_after.count() > 0:
-        #     # If yes, remove the existing canvas
-        #     self.spectrogram_after.itemAt(0).widget().setParent(None)
+        if self.spectrogram_after.count() > 0:
+            # If yes, remove the existing canvas
+            self.spectrogram_after.itemAt(0).widget().setParent(None)
         self.Plot("original")
         self.plot_spectrogram(data, sample_rate , self.spectrogram_before)
+        self.frequancy_graph.plot(self.current_signal.freq_data[0],
+                    self.current_signal.freq_data[1],pen={'color': 'b'})
         self.eqsignal = copy.deepcopy(self.current_signal)
 
     def get_Fourier(self, T, data):
@@ -237,8 +239,6 @@ class EqualizerApp(QtWidgets.QMainWindow):
                     graph.plotItem.legend.clear()
                 legend = graph.addLegend()
                 legend.addItem(plot_item, name=f"{signal.name}")
-                self.frequancy_graph.plot(signal.freq_data[0],
-                    signal.freq_data[1],pen={'color': 'b'})
 
     def plot_freq_smoothing_window (self):
         signal = self.eqsignal if self.equalized_bool  else self.current_signal
@@ -255,7 +255,7 @@ class EqualizerApp(QtWidgets.QMainWindow):
                 if i!= len(signal.Ranges) :
                     #print(signal.Ranges[i])
                     start_ind,end_ind = signal.Ranges[i]
-                    print(signal.Ranges[i])
+                    # print(signal.Ranges[i])
                     # Get smoothing window parameters
                     windowtype = self.smoothing_window_combobox.currentText()
                     # Convert sigma_text to integer if not empty, otherwise set a default value

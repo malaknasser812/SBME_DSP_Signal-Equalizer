@@ -190,6 +190,10 @@ class EqualizerApp(QtWidgets.QMainWindow):
         x_data, y_data = self.get_Fourier(T, self.current_signal.data)
         self.current_signal.freq_data = [x_data, y_data]
         self.Plot("original")
+        self.frequancy_graph.clear()
+        if self.spectrogram_after.count() > 0:
+            # If yes, remove the existing canvas
+            self.spectrogram_after.itemAt(0).widget().setParent(None)
         self.plot_spectrogram(data, sample_rate , self.spectrogram_before)
         self.eqsignal = copy.deepcopy(self.current_signal)
         selected_index = None
@@ -229,16 +233,9 @@ class EqualizerApp(QtWidgets.QMainWindow):
             signal= self.time_eq_signal if self.equalized_bool else self.current_signal
             if signal:
                 #time domain 
+                self.equalized_graph.clear()
                 graphs = [self.original_graph, self.equalized_graph]
-                if graph == "original" :
-                    graph = graphs[0]
-                    graphs[1].clear()
-                    self.frequancy_graph.clear()
-                    if self.spectrogram_after.count() > 0:
-                    # If yes, remove the existing canvas
-                        self.spectrogram_after.itemAt(0).widget().setParent(None)
-                else :
-                    graph = graphs[1]                
+                graph = graphs[0] if graph == "original" else graphs[1]                
                 graph.clear()
                 graph.setLabel('left', "Amplitude")
                 graph.setLabel('bottom', "Time")

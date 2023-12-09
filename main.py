@@ -34,13 +34,12 @@ class Signal:
 class SmoothingWindow:
     def __init__(self, window_type, amp,sigma=None):
         self.window_type = window_type
-        self.sigma = sigma
         self.amp = amp
+        self.sigma = sigma
     def apply(self, signal):
         if self.window_type == "Rectangular":
             window = sg.windows.boxcar(len(signal))
             smoothed_signal = self.amp * window 
-            smoothed_signal = self.amp * window
             return smoothed_signal
         elif self.window_type == "Hamming":
             window = sg.windows.hamming(len(signal))
@@ -128,31 +127,26 @@ class EqualizerApp(QtWidgets.QMainWindow):
         self.speed_up_btn.clicked.connect(lambda: self.speed_up()) 
         self.speed_down_btn.clicked.connect(lambda: self.speed_down())  
         self.checkBox.stateChanged.connect(lambda : self.hide())
-
-#OUR CODE HERE 
-    def dict_ranges(self):
-        self.selected_mode = self.modes_combobox.currentText()
-        dictnoary_values ={}
-        if self.selected_mode == 'Animal Sounds':
-            dictnoary_values = {"Dog": [0, 450],
-                                "Wolf": [450, 1100],
-                                "Crow": [1100, 3000],
-                                "Bat": [3000, 9000]
-                                }
-        elif self.selected_mode == 'Musical Instruments':
-            dictnoary_values = {"Guitar": [80,400],
+        self.dictionary = {
+            'Uniform Range':{},
+            'Musical Instruments': {"Guitar": [80,400],
                                 "Flute": [400, 800],
                                 "Violin ": [950, 4000],
                                 "Xylophone": [4000, 14000]
-                                }
-        elif self.selected_mode == 'ECG Abnormalities':
-            dictnoary_values = {"Normal" : [0,35],
+                                },
+            "Animal Sounds":{"Dog": [0, 450],
+                                "Wolf": [450, 1100],
+                                "Crow": [1100, 3000],
+                                "Bat": [3000, 9000]
+                                },
+            'ECG Abnormalities': {"Normal" : [0,35],
                                 "Arithmia_1 ": [48, 52],
                                 "Arithmia_2": [55, 94],
                                 "Arithmia_3": [95, 155]
                                 }
-        return dictnoary_values
+        }
 
+#OUR CODE HERE 
     def load(self):
         path_info = QtWidgets.QFileDialog.getOpenFileName(
             None, "Select a signal...",os.getenv('HOME'), filter="Raw Data (*.csv *.wav *.mp3)")
@@ -177,6 +171,7 @@ class EqualizerApp(QtWidgets.QMainWindow):
             data = np.array(data_of_signal.iloc[:,1].astype(float).tolist())
             if len(time) > 1:
                 sample_rate = 1 /( time[1]-time[0])
+                sample_rate = 1 /(time[1]-time[0])
             else:
                 sample_rate=1
         # Create a Signal object and set its attributes
@@ -189,6 +184,11 @@ class EqualizerApp(QtWidgets.QMainWindow):
         T = 1 / self.current_signal.sample_rate
         x_data, y_data = self.get_Fourier(T, self.current_signal.data)
         self.current_signal.freq_data = [x_data, y_data]
+        for i in range(10):
+            self.batch_size = len(self.current_signal.freq_data[0])//10 
+            self.dictionary['Uniform Range'][i] = [i*self.batch_size,(i+1)*self.batch_size]  
+        # selected_index = None
+        # self.add_slider(selected_index)
         self.Plot("original")
         self.frequancy_graph.clear()
         if self.spectrogram_after.count() > 0:
@@ -196,8 +196,6 @@ class EqualizerApp(QtWidgets.QMainWindow):
             self.spectrogram_after.itemAt(0).widget().setParent(None)
         self.plot_spectrogram(data, sample_rate , self.spectrogram_before)
         self.eqsignal = copy.deepcopy(self.current_signal)
-        selected_index = None
-        self.add_slider(selected_index)
 
     def get_Fourier(self, T, data):
         N=len(data)
@@ -210,23 +208,16 @@ class EqualizerApp(QtWidgets.QMainWindow):
         return Freq, Amp
 
     def Range_spliting(self):
-        dictnoary_values = self.dict_ranges()
-        #print (self.modes_combobox.currentText())
-        if self.modes_combobox.currentText() == 'Uniform Range':
-            #print("yaraaaaaaaaaaab")
-            # Divide the frequency range into 10 equal parts for the 'Uniform Range' mode
-            batch_size = int(len(self.current_signal.freq_data[0])/10) 
-            self.current_signal.Ranges = [(i*batch_size,(i+1)*batch_size) for i in range(10)] 
-            #print (self.current_signal.Ranges)
-        else:
-            freq = self.current_signal.freq_data[0] #index zero for values of freq
-            # print(dictnoary_values.items())
+        freq = self.current_signal.freq_data[0]  # Index zero for values of freq
+        if self.selected_mode == 'Uniform Range':
+            self.current_signal.Ranges = [(i*self.batch_size,(i+1)*self.batch_size) for i in range(10)] 
+        else: 
+            dict = self.dictionary[self.selected_mode]
             # Calculate frequency indices for specified ranges
-            for _,(start,end) in dictnoary_values.items():
+            for  _, (start,end) in dict.items():
                 start_ind = bisect.bisect_left(freq, start)
                 end_ind = bisect.bisect_right(freq, end) - 1  # Adjusted for inclusive end index
                 self.current_signal.Ranges.append((start_ind, end_ind))
-                # print(self.current_signal.Ranges)
         self.eqsignal.Ranges = copy.deepcopy(self.current_signal.Ranges)
 
     def Plot(self, graph):
@@ -262,6 +253,7 @@ class EqualizerApp(QtWidgets.QMainWindow):
                 if i!= len(signal.Ranges) :
                     #print(signal.Ranges[i])
                     start_ind,end_ind = signal.Ranges[i]
+                    print(signal.Ranges[i])
                     # Get smoothing window parameters
                     windowtype = self.smoothing_window_combobox.currentText()
                     # Convert sigma_text to integer if not empty, otherwise set a default value
@@ -377,6 +369,19 @@ class EqualizerApp(QtWidgets.QMainWindow):
             sd.play(self.time_eq_signal.data, self.current_signal.sample_rate, speed = self.current_speed, volume = 1.0 )
         #print(new_speed)
 
+    def replay (self):
+        if self.type == 'orig':
+            self.playMusic('orig')
+        else: self.playMusic('equalized')
+
+    def zoom_in(self):
+        self.original_graph.getViewBox().scaleBy((0.5, 0.5))
+        self.equalized_graph.getViewBox().scaleBy((0.5, 0.5))
+
+    def zoom_out(self):
+        self.original_graph.getViewBox().scaleBy((2, 2))
+        self.equalized_graph.getViewBox().scaleBy((2, 2))
+
     def play_pause(self):
         if self.changed_orig:
             self.player.pause()
@@ -392,7 +397,7 @@ class EqualizerApp(QtWidgets.QMainWindow):
         selected_index = self.modes_combobox.currentIndex()
         self.selected_mode = self.modes_combobox.currentText()
         # store the mode in a global variable 
-        self.add_slider(selected_index)
+        self.add_slider(self.selected_mode)
         self.Range_spliting()
 
     def smoothing_window_combobox_activated(self):
@@ -408,31 +413,17 @@ class EqualizerApp(QtWidgets.QMainWindow):
                 item.widget().deleteLater() 
 
     def add_slider(self, selected_index):          
-        if selected_index == 0: #uniform range
-            self.clear_layout(self.frame_layout)
-            for i in range(10):
-                slider_creator = CreateSlider(i)
-                slider = slider_creator.get_slider()
-                self.slider_gain[i] = 10
-                key = 'Slider' + str (i+1)
-                label = QLabel(key)
-                slider.valueChanged.connect(lambda value, i=i: self.update_slider_value(i, value/10))
-                self.frame_layout.addWidget(slider) 
-                self.frame_layout.addWidget(label)
-        else:
-            # either musical, animal or ecg
-            self.clear_layout(self.frame_layout) 
-            dict_ranges = self.dict_ranges()
-            # for key in dict_ranges.keys():  # Use enumerate to get both index and key
-            for i,(key,_ )in enumerate(dict_ranges.items()):
-                # print(f"Index: {i}, Key: {key}")
-                label = QLabel(key)  # Create a label with a unique identifier
-                slider_creator = CreateSlider(i)
-                slider = slider_creator.get_slider()
-                self.slider_gain[i] = 10
-                slider.valueChanged.connect(lambda value, i=i: self.update_slider_value(i, value/10))
-                self.frame_layout.addWidget(slider)
-                self.frame_layout.addWidget(label)
+        self.clear_layout(self.frame_layout) 
+        dictinoary = self.dictionary[selected_index]
+        for i,(key,_ )in enumerate(dictinoary.items()):
+            # print(f"Index: {i}, Key: {key}")
+            label = QLabel(str(key))  # Create a label with a unique identifier
+            slider_creator = CreateSlider(i)
+            slider = slider_creator.get_slider()
+            self.slider_gain[i] = 10
+            slider.valueChanged.connect(lambda value, i=i: self.update_slider_value(i, value/10))
+            self.frame_layout.addWidget(slider)
+            self.frame_layout.addWidget(label)
         
     def update_slider_value(self, slider_index, value):
         # This method will be called whenever a slider is moved
@@ -472,7 +463,6 @@ class EqualizerApp(QtWidgets.QMainWindow):
         new_amp = Amp * curr_smooth_window
         self.eqsignal.freq_data[1][start:end] = new_amp
         self.plot_freq_smoothing_window()
-        self.time_eq_signal.data= self.recovered_signal(self.eqsignal.freq_data[1], self.eqsignal.phase)[0]
         self.time_eq_signal.time = self.current_signal.time
         self.time_eq_signal.data = self.recovered_signal(self.eqsignal.freq_data[1], self.current_signal.phase)
         #print(len(self.time_eq_signal.data))

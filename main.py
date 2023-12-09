@@ -122,7 +122,9 @@ class EqualizerApp(QtWidgets.QMainWindow):
         self.hear_eq_btn.clicked.connect(lambda:self.playMusic('equalized'))
         self.apply_btn.clicked.connect(lambda: self.plot_freq_smoothing_window())
         self.play_pause_btn.clicked.connect(lambda: self.play_pause()) 
-        #self.replay_btn.clicked.connect(lambda: self.playMusic())
+        self.replay_btn.clicked.connect(lambda: self.replay())
+        self.zoom_in_btn.clicked.connect(lambda: self.zoom_in())
+        self.zoom_out_btn.clicked.connect(lambda: self.zoom_out())
         self.speed_up_btn.clicked.connect(lambda: self.speed_up()) 
         self.speed_down_btn.clicked.connect(lambda: self.speed_down())  
         self.checkBox.stateChanged.connect(lambda : self.hide())
@@ -174,7 +176,7 @@ class EqualizerApp(QtWidgets.QMainWindow):
             time = np.array(data_of_signal.iloc[:,0].astype(float).tolist())
             data = np.array(data_of_signal.iloc[:,1].astype(float).tolist())
             if len(time) > 1:
-                sample_rate = 1 /time[1]-time[0]
+                sample_rate = 1 /( time[1]-time[0])
             else:
                 sample_rate=1
         # Create a Signal object and set its attributes
@@ -188,6 +190,10 @@ class EqualizerApp(QtWidgets.QMainWindow):
         x_data, y_data = self.get_Fourier(T, self.current_signal.data)
         self.current_signal.freq_data = [x_data, y_data]
         self.Plot("original")
+        self.frequancy_graph.clear()
+        if self.spectrogram_after.count() > 0:
+            # If yes, remove the existing canvas
+            self.spectrogram_after.itemAt(0).widget().setParent(None)
         self.plot_spectrogram(data, sample_rate , self.spectrogram_before)
         self.eqsignal = copy.deepcopy(self.current_signal)
         selected_index = None
@@ -227,19 +233,9 @@ class EqualizerApp(QtWidgets.QMainWindow):
             signal= self.time_eq_signal if self.equalized_bool else self.current_signal
             if signal:
                 #time domain 
+                self.equalized_graph.clear()
                 graphs = [self.original_graph, self.equalized_graph]
-                if graph == "original" :
-                    graph = graphs[0]
-                    graphs[1].clear()
-                    self.frequancy_graph.clear()
-                    # Plot the original frequency data in white
-                    self.frequancy_graph.plot(signal.freq_data[0],
-                            signal.freq_data[1],pen={'color': 'b'})
-                    if self.spectrogram_after.count() > 0:
-                    # If yes, remove the existing canvas
-                        self.spectrogram_after.itemAt(0).widget().setParent(None)
-                else :
-                    graph = graphs[1]                
+                graph = graphs[0] if graph == "original" else graphs[1]                
                 graph.clear()
                 graph.setLabel('left', "Amplitude")
                 graph.setLabel('bottom', "Time")
@@ -313,6 +309,11 @@ class EqualizerApp(QtWidgets.QMainWindow):
         canvas = FigureCanvas(fig)
         widget.addWidget(canvas)
 
+    def replay (self):
+        if self.type == 'orig':
+            self.playMusic('orig')
+        else: self.playMusic('equalized')
+
     def playMusic(self, type):
         self.current_speed = 1
         self.line_position = 0
@@ -320,6 +321,7 @@ class EqualizerApp(QtWidgets.QMainWindow):
         media = QMediaContent(QUrl.fromLocalFile(self.audio_data))
         # Set the media content for the player and start playing
         self.player.setMedia(media)
+        self.type = type
         if type == 'orig':
             sd.stop()
             self.timer.stop()
@@ -337,7 +339,7 @@ class EqualizerApp(QtWidgets.QMainWindow):
             self.changed_orig = False
             self.timer.start()
             self.player.play()
-            self.player.setVolume(2)
+            self.player.setVolume(0)
             self.original_graph.removeItem(self.line)
             self.equalized_graph.addItem(self.line)
             sd.play(self.time_eq_signal.data, self.current_signal.sample_rate, blocking=False)
@@ -438,6 +440,19 @@ class EqualizerApp(QtWidgets.QMainWindow):
         #print (self.slider_gain)
         self.equalized(slider_index, value)
         #self.Plot('equalized')
+
+    def zoom_in(self):
+        self.original_graph.getViewBox().scaleBy((0.5, 0.5))
+        self.equalized_graph.getViewBox().scaleBy((0.5, 0.5))
+        print('zoomed in')
+       
+
+    def zoom_out(self):
+        self.original_graph.getViewBox().scaleBy((2, 2))
+        self.equalized_graph.getViewBox().scaleBy((2, 2))
+        print('zoomed out')
+
+    
 
     def equalized(self, slider_index,value):
         #print (value)

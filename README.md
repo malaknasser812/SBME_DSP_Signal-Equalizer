@@ -24,6 +24,25 @@ The application operates in different modes:
   - Synchronous viewing of signals ensures both viewers display the same time-part of the signal during scroll or zoom.
   - Toggle option for displaying/hiding spectrograms (input and output).
   - Spectrograms reflect real-time changes made through the equalizer sliders.
+## Screenshot:
+### Applying Animals Mode:
+### ![Screenshot (49)](https://github.com/hagersamir/SBME_DSP_Signal-Equalizer/assets/105936147/73aa846b-9e90-4811-bb3a-2043ffe59d7b)
+### Equalize Animals Mode Using Rectangular:
+### ![Screenshot (50)](https://github.com/hagersamir/SBME_DSP_Signal-Equalizer/assets/105936147/ae8cc03a-324f-47be-be1f-729af94f12a8)
+### Equalize Animals Mode Using Hamming:
+### ![Screenshot (51)](https://github.com/hagersamir/SBME_DSP_Signal-Equalizer/assets/105936147/23e1315e-53db-49b2-ba84-88d0ed2e9617)
+### Equalize Animals Mode Using Hanning:
+### ![Screenshot (52)](https://github.com/hagersamir/SBME_DSP_Signal-Equalizer/assets/105936147/68f9cede-4fcb-43c9-b378-b388c2e14527)
+### Equalize Animals Mode Using Gaussian with 50 std:
+### ![Screenshot (53)](https://github.com/hagersamir/SBME_DSP_Signal-Equalizer/assets/105936147/4328a5ab-3f1e-4092-8375-4822175d7ca7)
+### Equalize Musical Instruments Mode Using Gaussian with 50 std:
+### ![Screenshot (54)](https://github.com/hagersamir/SBME_DSP_Signal-Equalizer/assets/105936147/22de29cb-6707-4148-9743-b5edba5eb0bf)
+### Equalize ECG Abnormalities Mode Using Rectangular:
+### ![Screenshot (55)](https://github.com/hagersamir/SBME_DSP_Signal-Equalizer/assets/105936147/09670bc7-5445-425c-aaf6-9d8683316c61)
+### Hide Spectogram:
+### ![Screenshot (56)](https://github.com/hagersamir/SBME_DSP_Signal-Equalizer/assets/105936147/28275f95-3647-4964-ae25-86c7eb1c6430)
+### Applying Uniform Mode Using Rectangular:
+### ![Screenshot (57)](https://github.com/hagersamir/SBME_DSP_Signal-Equalizer/assets/105936147/b3cf98d1-2e08-4952-8663-ffba42594b84)
 
  ## Installation :-
 1. Clone the repository
